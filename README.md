@@ -19,7 +19,10 @@ This repository contains code related to research into using deep neural network
 * [ ] GRU on top of CNN encoded frames
 * [ ] CNN on top of CNN encoded frames
 
+## Usage Instructions
+
+> To do
+
 ## Setup
 
 The model was trained on an aws `p2.xlarge` instance with the `nvidia deep learning ami`.
-To start, just run `jupyter notebook` in this folder that contains the README and `notebooks` folder.
