@@ -8,11 +8,11 @@ This repository contains code related to research into using deep neural network
 
 ## Models:
 
-> Single Frame Classification
+### Single Frame Classification
 * [x] Fine-tuned CNNs: VGG16, Xception, ResNet50, InceptionV3, InceptionResNetV2, MobileNetV2
 * [ ] Fine-tuned CNN Ensemble
 
-> Sequence Models
+### Sequence Models
 * [x] MLP on concatenated CNN frames 
 * [x] RNN on top of CNN encoded frames
 * [x] LSTM on top of CNN encoded frames
