@@ -1,5 +1,7 @@
+scripts/nohup.out
 data/*
 models/*
+results/*
 cache/*
 logs.log
 nohup.out
