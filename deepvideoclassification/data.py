@@ -17,7 +17,7 @@
 verbose = True
 
 
-# In[ ]:
+# In[3]:
 
 
 import os
@@ -31,7 +31,7 @@ import sys
 sys.path.append('..')
 
 
-# In[3]:
+# In[4]:
 
 
 # import pretrained model functions
@@ -248,14 +248,14 @@ def load_label_map():
     return label_map
 
 
-# In[12]:
+# In[34]:
 
 
 class Data(object):
     
     def __init__(self, sequence_length, 
                  return_CNN_features = False, pretrained_model_name = None, pooling = None, 
-                 target_size = None, augmentation = False, oversampling = False):
+                 frame_size = None, augmentation = False, oversampling = False):
         """
         Data object constructor
         
@@ -266,7 +266,7 @@ class Data(object):
         :return_features: if True then return features (or sequences of feature) from pretrained model, if False then return frames (or sequences of frames)        
         :pretrained_model_name: name of pretrained model (or None if not using pretrained model e.g. for 3D-CNN)
         :pooling: name of pooling variant (or None if not using pretrained model e.g. for 3D-CNN)
-        :target_size: size that frames are resized to (this is looked up for pretrained models)
+        :frame_size: size that frames are resized to (this is looked up for pretrained models)
         :augmentation: whether to apply data augmentation (horizontal flips)
         :oversampling: whether to apply oversampling to create class balance
         
@@ -277,18 +277,16 @@ class Data(object):
     
         # required params
         self.sequence_length = sequence_length
-        self.target_size = target_size
+        self.frame_size = frame_size
         
         # optional params
-        pretrained_model_name = pretrained_model_name.lower()
-        pooling = pooling.lower()
         self.pretrained_model_name = pretrained_model_name
-        self.pooling = pooling.lower()
+        self.pooling = pooling
         self.return_CNN_features = return_CNN_features
         self.augmentation = augmentation
         self.oversampling = oversampling
         
-        # model data
+        # init model data
         self.x_train = []
         self.y_train = []
         #
@@ -298,6 +296,11 @@ class Data(object):
         self.x_test = []
         self.y_test = []
         
+        # fix case sensitivity
+        if type(self.pretrained_model_name) == str:
+            self.pretrained_model_name = self.pretrained_model_name.lower()
+        if type(self.pooling) == str:
+            self.pooling = self.pooling.lower()
         
         ################
         ### Prepare data
@@ -321,10 +324,10 @@ class Data(object):
         
         # look up target size for pretrained model
         if pretrained_model_name is not None:
-            self.target_size = pretrained_model_sizes[pretrained_model_name]
+            self.frame_size = pretrained_model_sizes[pretrained_model_name]
         
         # precompute resized frames (won't recompute if already resized)
-        resize_frames(self.target_size)
+        resize_frames(self.frame_size)
 
         # pre compute CNN features (won't recompute if already computed)
         if return_CNN_features and pretrained_model_name is not None:
@@ -407,7 +410,7 @@ class Data(object):
                 
                 # load resized numpy array
                 path_vid_resized = path_cache + 'frames/'
-                path_vid_resized += str(self.target_size[0]) + "_" + str(self.target_size[1]) + '/' 
+                path_vid_resized += str(self.frame_size[0]) + "_" + str(self.frame_size[1]) + '/' 
                 
                 path_labels = path_cache + 'labels/'
                 
@@ -500,7 +503,7 @@ class Data(object):
                 
                 # load resized numpy array
                 path_vid_resized = path_cache + 'frames/'
-                path_vid_resized += str(self.target_size[0]) + "_" + str(self.target_size[1]) + '/' 
+                path_vid_resized += str(self.frame_size[0]) + "_" + str(self.frame_size[1]) + '/' 
                 
                 path_labels = path_cache + 'labels/'
                 
@@ -546,10 +549,30 @@ class Data(object):
         self.x_test = np.concatenate(self.x_test, axis=0)
         self.y_test = np.concatenate(self.y_test, axis=0)
         
+        
+        
+        #################################
+        ### get file paths for each split
+        #################################
+        # get file paths: train
+        dflab = self.labels[self.labels['split'] == 'train']
+        self.paths_train = list(path_data + dflab['video'] + "/" + dflab['frame'])
+
+        # get file paths: valid
+        dflab = self.labels[self.labels['split'] == 'valid']
+        self.paths_valid = list(path_data + dflab['video'] + "/" + dflab['frame'])
+
+        # get file paths: test
+        dflab = self.labels[self.labels['split'] == 'test']
+        self.paths_test = list(path_data + dflab['video'] + "/" + dflab['frame'])
+        
         # pull number of classes from labels shape
         self.num_classes = self.y_train.shape[1]
             
 
+    def __str__(self):
+        return "x_train: {}, y_train: {} ... x_valid: {}, y_valid: {} ... x_test: {}, y_test: {}".format(self.x_train.shape,self.y_train.shape,self.x_valid.shape,self.y_valid.shape,self.x_test.shape,self.y_test.shape)
+            
     def shuffle(self):
         """
         randomize the order of samples in train and valid splits
@@ -557,6 +580,16 @@ class Data(object):
         ###########
         ### shuffle
         ###########
-        self.x_train, self.y_train = shuffle(self.x_train, self.y_train)
-        self.x_valid, self.y_valid = shuffle(self.x_valid, self.y_valid)
+        # paths will no longer be correct (they're for debugging anyway)
+        self.x_train, self.y_train, self.paths_train = shuffle(self.x_train, self.y_train, self.paths_train)
+        self.x_valid, self.y_valid, self.paths_valid = shuffle(self.x_valid, self.y_valid, self.paths_valid)
+
+
+# In[35]:
+
+
+# data = Data(sequence_length = 1, 
+#             return_CNN_features = True, 
+#             pretrained_model_name='vgg16', 
+#             pooling='max')
 
