@@ -2,6 +2,7 @@ deepvideoclassification/.ipynb_checkpoints/
 scripts/nohup.out
 data/*
 models/*
+old_models/*
 results/*
 cache/*
 logs.log
