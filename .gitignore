@@ -10,3 +10,5 @@ nohup.out
 notebooks/.ipynb_checkpoints/
 .ipynb_checkpoints/
 tensorboard/
+cache_seals/
+data_seals/
