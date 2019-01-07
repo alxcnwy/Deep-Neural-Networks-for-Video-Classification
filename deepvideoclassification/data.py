@@ -14,7 +14,7 @@
 
 
 # whether to log each feature and sequence status
-verbose = True
+verbose = 1
 
 
 # In[3]:
@@ -35,7 +35,7 @@ sys.path.append('..')
 
 
 # import pretrained model functions
-from deepvideoclassification.models import precompute_CNN_features    
+from deepvideoclassification.models import precompute_CNN_features
 from deepvideoclassification.models import load_pretrained_model_preprocessor
 from deepvideoclassification.models import load_pretrained_model
 
@@ -45,7 +45,7 @@ from deepvideoclassification.models import pretrained_model_sizes
 from deepvideoclassification.models import pretrained_model_names, poolings
 
 
-# In[5]:
+# In[ ]:
 
 
 # setup paths
@@ -54,7 +54,7 @@ path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
 
 
-# In[6]:
+# In[ ]:
 
 
 # setup logging
@@ -69,7 +69,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-# In[7]:
+# In[ ]:
 
 
 # read vid folders
@@ -99,7 +99,7 @@ def get_video_paths():
     return path_videos
 
 
-# In[8]:
+# In[ ]:
 
 
 def resize_frames(target_size):
@@ -116,6 +116,8 @@ def resize_frames(target_size):
     """
 
     if not os.path.exists(path_cache + 'frames/' + str(target_size[0]) + "_" + str(target_size[1]) + '/'):
+        
+        os.makedirs(path_cache + 'frames/' + str(target_size[0]) + "_" + str(target_size[1]) + '/')
 
         # read vid paths
         path_videos = get_video_paths()
@@ -157,7 +159,7 @@ def resize_frames(target_size):
             np.save("/mnt/seals/cache/frames/" + str(target_size[0]) + "_" + str(target_size[1]) + "/" + video_name, np.array(frames))
 
 
-# In[9]:
+# In[ ]:
 
 
 def get_labels():
@@ -174,7 +176,7 @@ def get_labels():
     return labels.sort_values(["video","frame"])
 
 
-# In[10]:
+# In[ ]:
 
 
 def create_video_label_arrays():
@@ -222,7 +224,7 @@ def create_video_label_arrays():
         np.save("/mnt/seals/cache/labels/" + video_name, np.array(vid_labels))
 
 
-# In[11]:
+# In[ ]:
 
 
 def load_label_map():
@@ -248,14 +250,15 @@ def load_label_map():
     return label_map
 
 
-# In[34]:
+# In[ ]:
 
 
 class Data(object):
     
     def __init__(self, sequence_length, 
-                 return_CNN_features = False, pretrained_model_name = None, pooling = None, 
-                 frame_size = None, augmentation = False, oversampling = False):
+                    return_CNN_features = False, pretrained_model_name = None, pooling = None, 
+                    frame_size = None, augmentation = False, oversampling = False,
+                    model_weights_path = None, custom_model_name = None):
         """
         Data object constructor
         
@@ -269,6 +272,9 @@ class Data(object):
         :frame_size: size that frames are resized to (this is looked up for pretrained models)
         :augmentation: whether to apply data augmentation (horizontal flips)
         :oversampling: whether to apply oversampling to create class balance
+        
+        :model_weights_path: path to custom model weights if we want to load CNN model we've fine-tuned to produce features (e.g. for LRCNN)
+        :custom_model_name: custom output name to append to pretrained model name
         
         
         Notes: 
@@ -331,7 +337,13 @@ class Data(object):
 
         # pre compute CNN features (won't recompute if already computed)
         if return_CNN_features and pretrained_model_name is not None:
-            precompute_CNN_features(self.pretrained_model_name, self.pooling)
+            if model_weights_path is not None and custom_model_name is not None:
+                # precompute with custom weights input and name
+                precompute_CNN_features(self.pretrained_model_name, self.pooling, self.model_weights_path, self.custom_model_name)
+            else:
+                precompute_CNN_features(self.pretrained_model_name, self.pooling)
+            
+            
             
         # get preprocessor given pretrained if we will need to apply preprocessor 
         # (i.e. if return_CNN_features == False and pretrained_model_name != None)
@@ -358,6 +370,8 @@ class Data(object):
                 #####################
                 
                 path_features = path_cache + 'features/' + pretrained_model_name + "/" + pooling + '/'
+                if not return_CNN_features and pretrained_model_name is not None:
+                    path_features = path_cache + 'features/' + pretrained_model_name + "__" + custom_model_name + "/" + pooling + '/'
                 path_labels = path_cache + 'labels/'
                 
                 # read vid paths
@@ -470,6 +484,9 @@ class Data(object):
                 ###################
                 
                 path_features = path_cache + 'features/' + pretrained_model_name + "/" + pooling + '/'
+                if not return_CNN_features and pretrained_model_name is not None:
+                    path_features = path_cache + 'features/' + pretrained_model_name + "__" + custom_model_name + "/" + pooling + '/'
+                
                 path_labels = path_cache + 'labels/'
                 
                 # read vid paths
@@ -554,6 +571,9 @@ class Data(object):
         #################################
         ### get file paths for each split
         #################################
+        #
+        # Note: only makes sense for sequence_length = 1
+        
         # get file paths: train
         dflab = self.labels[self.labels['split'] == 'train']
         self.paths_train = list(path_data + dflab['video'] + "/" + dflab['frame'])
@@ -585,11 +605,32 @@ class Data(object):
         self.x_valid, self.y_valid, self.paths_valid = shuffle(self.x_valid, self.y_valid, self.paths_valid)
 
 
-# In[35]:
+# In[ ]:
 
 
 # data = Data(sequence_length = 1, 
 #             return_CNN_features = True, 
 #             pretrained_model_name='vgg16', 
 #             pooling='max')
+
+
+# # Build cache
+
+# In[ ]:
+
+
+if __name__ == "__main__":
+    # build feature cache in advance by running python3 data.py
+    for pretrained_model_name in pretrained_model_names:
+        for pooling in poolings:
+            data = Data(sequence_length=1, 
+                        return_CNN_features=True,
+                        pretrained_model_name = pretrained_model_name,
+                        pooling=pooling)
+
+
+# In[ ]:
+
+
+
 
