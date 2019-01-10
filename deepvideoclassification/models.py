@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 ### TODO
@@ -16,14 +16,14 @@
 # * refactor custom_model_name and model_weights_path to instead use trained model id
 
 
-# In[3]:
+# In[2]:
 
 
 # whether to log each feature and sequence status
 verbose = 1
 
 
-# In[4]:
+# In[3]:
 
 
 import os
@@ -36,13 +36,13 @@ import sys
 sys.path.append('..')
 
 
-# In[7]:
+# In[151]:
 
 
 from keras import backend as K
 from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger, TensorBoard
 from keras.layers import Dense, Flatten, Dropout, ZeroPadding3D, Input
-from keras.layers.recurrent import LSTM, SimpleRNN, GRU
+from keras.layers.recurrent import SimpleRNN, GRU, LSTM
 from keras.layers.wrappers import TimeDistributed
 from keras.layers.convolutional import Conv2D, MaxPooling3D, Conv3D, MaxPooling2D, Convolution1D, Convolution3D, MaxPooling3D, ZeroPadding3D
 from keras.models import Sequential, Model, load_model
@@ -50,7 +50,7 @@ from keras.optimizers import Adam, RMSprop
 from keras.preprocessing.image import img_to_array
 
 
-# In[8]:
+# In[5]:
 
 
 # setup paths
@@ -59,7 +59,7 @@ path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
 
 
-# In[9]:
+# In[6]:
 
 
 # setup logging
@@ -76,7 +76,7 @@ logger = logging.getLogger()
 
 # # Pretrained_CNNs
 
-# In[ ]:
+# In[7]:
 
 
 # pretrained model shapes
@@ -93,7 +93,7 @@ pretrained_model_len_features['xception'] = 2048
 pretrained_model_len_features['inception_v3'] = 2048
 
 
-# In[ ]:
+# In[8]:
 
 
 # pretrained model shapes
@@ -108,14 +108,14 @@ pretrained_model_sizes['inception_v3'] = (299,299)
 pretrained_model_sizes['inception_resnet_v2'] = (299,299)
 
 
-# In[ ]:
+# In[9]:
 
 
 pretrained_model_names = ["inception_resnet_v2", "inception_v3", "mobilenetv2_1.00_224", "resnet50", "vgg16", "xception"]
 poolings = ['max','avg']
 
 
-# In[ ]:
+# In[10]:
 
 
 def load_pretrained_model(pretrained_model_name, pooling, model_weights_path = None):
@@ -168,7 +168,7 @@ def load_pretrained_model(pretrained_model_name, pooling, model_weights_path = N
     return model
 
 
-# In[ ]:
+# In[11]:
 
 
 def load_pretrained_model_preprocessor(pretrained_model_name):
@@ -198,7 +198,7 @@ def load_pretrained_model_preprocessor(pretrained_model_name):
     return preprocess_input
 
 
-# In[19]:
+# In[12]:
 
 
 def precompute_CNN_features(pretrained_model_name, pooling, model_weights_path = None, custom_model_name = None):
@@ -297,7 +297,7 @@ def precompute_CNN_features(pretrained_model_name, pooling, model_weights_path =
 
 # # Image/video classification architecture object (contains keras model object) 
 
-# In[ ]:
+# In[152]:
 
 
 class Architecture(object):
@@ -435,7 +435,7 @@ class Architecture(object):
                 l.trainable=False
 
             # use Keras functional API
-            model_top = base_model.output
+            model_top = model_base.output
 
             # note layer names are there so we can exclude those layers 
             # when setting base model layers to trainable
@@ -462,7 +462,7 @@ class Architecture(object):
             model_predictions = Dense(self.num_classes, activation="softmax", name='top_g')(model_top)
 
             # combine base and top models into single model object
-            model = Model(inputs=base_model.input, outputs=model_predictions)
+            model = Model(inputs=model_base.input, outputs=model_predictions)
                 
         elif architecture == "video_MLP_concat":
 
@@ -513,7 +513,7 @@ class Architecture(object):
             return_sequences_1, return_sequences_2 = False, False
             if sequence_model_layers > 1 and layer_2_size > 0:
                 return_sequences_1 = True
-            if sequence_model_layers == 2 and layer_3_size > 0 and layer_2_size > 0:
+            if sequence_model_layers >= 2 and layer_3_size > 0 and layer_2_size > 0:
                 return_sequences_2 = True
                 
             print(return_sequences_1, return_sequences_2)
@@ -544,9 +544,8 @@ class Architecture(object):
             # layer 2 (sequential or dense)
             if layer_2_size > 0:
                 if return_sequences_1 == False:
-                    model.add(Dropout(self.dropout))
                     model.add(Dense(self.layer_2_size, activation='relu'))
-                    model.add(Flatten())
+                    model.add(Dropout(self.dropout))
                 else:
                     if sequence_model == "LSTM":
                         model.add(LSTM(self.layer_2_size, return_sequences=return_sequences_2, dropout=self.dropout))
@@ -556,17 +555,16 @@ class Architecture(object):
                         model.add(GRU(self.layer_2_size, return_sequences=return_sequences_2, dropout=self.dropout))
                     elif sequence_model == "Convolution1D":
                         model.add(Convolution1D(self.layer_2_size, kernel_size = self.convolution_kernel_size, padding = 'valid'))
-                        if layer_3_size == 0 or sequence_model_layers == 2:
-                            model.add(Flatten())
                     else:
                         raise NameError('Invalid sequence_model - must be one of [LSTM, SimpleRNN, GRU, Convolution1D]') 
 
             # layer 3 (sequential or dense)
             if layer_3_size > 0:
                 if sequence_model_layers < 3:
-                    model.add(Dropout(self.dropout))
+                    if sequence_model_layers == 2:
+                        model.add(Flatten())
                     model.add(Dense(self.layer_3_size, activation='relu'))
-                    model.add(Flatten())
+                    model.add(Dropout(self.dropout))
                 else:
                     if sequence_model == "LSTM":
                         model.add(LSTM(self.layer_3_size, return_sequences=False, dropout=self.dropout))
@@ -582,6 +580,9 @@ class Architecture(object):
                         model.add(Flatten())
                     else:
                         raise NameError('Invalid sequence_model - must be one of [LSTM, SimpleRNN, GRU, Convolution1D]') 
+            else:
+                if return_sequences_2 == True: 
+                    model.add(Flatten())
 
             # classifier layer
             if self.dropout > 0:
@@ -613,7 +614,7 @@ class Architecture(object):
             # optionally load weights for pretrained architecture
             # (will likely be better to first train CNN then load weights in LRCNN vs. use pretrained ImageNet CNN)
             if self.model_weights_path is not None:
-                base_model.load_weights(self.model_weights_path)
+                model_base.load_weights(self.model_weights_path)
             
             # freeze model_cnn layers (will unfreeze later after sequence model trained a while)
             for l in model_cnn.layers:
@@ -705,7 +706,7 @@ class Architecture(object):
         self.model = model
 
 
-# In[11]:
+# In[139]:
 
 
 def make_last_layers_trainable(model, num_layers):
@@ -738,7 +739,7 @@ def make_last_layers_trainable(model, num_layers):
     return model
 
 
-# In[12]:
+# In[140]:
 
 
 def train(model, data, path_model, learning_rate = 0.001, epochs = 20, batch_size = 32, patience=10, verbose = verbose):
@@ -776,7 +777,7 @@ def train(model, data, path_model, learning_rate = 0.001, epochs = 20, batch_siz
     opt = Adam(lr = learning_rate)
     
     # compile model
-    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
     
     # setup training callbacks
     callback_stopper = EarlyStopping(monitor='val_acc', patience=patience, verbose=0)
@@ -795,7 +796,7 @@ def train(model, data, path_model, learning_rate = 0.001, epochs = 20, batch_siz
               verbose=verbose)
 
 
-# In[ ]:
+# In[16]:
 
 
 # fit_history = train(model, data, path_model = pwd+'models/', learning_rate = 0.001)
