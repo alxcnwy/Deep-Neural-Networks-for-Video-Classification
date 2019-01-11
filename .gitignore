@@ -12,3 +12,6 @@ notebooks/.ipynb_checkpoints/
 tensorboard/
 cache_seals/
 data_seals/
+cache_penguins/
+data_penguins/
+videos/
