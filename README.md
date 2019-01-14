@@ -26,3 +26,8 @@ This repository contains code related to research into using deep neural network
 ## Setup
 
 The model was trained on an aws `p2.xlarge` instance with the `nvidia deep learning ami`.
+
+
+## Refactor
+
+* Sequence length calc in h5 feature gen
