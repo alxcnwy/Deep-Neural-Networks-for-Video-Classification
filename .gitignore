@@ -17,3 +17,5 @@ data_penguins/
 videos/
 penguin_label_timestamps.csv
 checksums.csv
+.DS_Store
+notebooks/.DS_Store
