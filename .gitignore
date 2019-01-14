@@ -16,3 +16,4 @@ cache_penguins/
 data_penguins/
 videos/
 penguin_label_timestamps.csv
+checksums.csv
