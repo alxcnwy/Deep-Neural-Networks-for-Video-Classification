@@ -31,3 +31,5 @@ The model was trained on an aws `p2.xlarge` instance with the `nvidia deep learn
 ## Refactor
 
 * Sequence length calc in h5 feature gen
+* Generate features on resized frames instead of raw frames
+
