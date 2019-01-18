@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[5]:
 
 
 # whether to log each feature and sequence status
 verbose = 1
 
 
-# In[2]:
+# In[6]:
 
 
 import os
@@ -25,13 +25,13 @@ import h5py
 import random
 
 
-# In[3]:
+# In[7]:
 
 
 import keras
 
 
-# In[4]:
+# In[8]:
 
 
 # import pretrained model functions
@@ -45,7 +45,7 @@ from deepvideoclassification.models import pretrained_model_sizes
 from deepvideoclassification.models import pretrained_model_names, poolings
 
 
-# In[5]:
+# In[9]:
 
 
 # setup paths
@@ -54,7 +54,7 @@ path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
 
 
-# In[6]:
+# In[10]:
 
 
 # setup logging
@@ -79,7 +79,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 sys.excepthook = handle_exception
 
 
-# In[7]:
+# In[11]:
 
 
 # read vid folders
@@ -109,7 +109,7 @@ def get_video_paths():
     return path_videos
 
 
-# In[8]:
+# In[12]:
 
 
 def resize_frames(target_size):
@@ -169,7 +169,7 @@ def resize_frames(target_size):
             np.save(path_cache + "frames/" + str(target_size[0]) + "_" + str(target_size[1]) + "/" + video_name, np.array(frames))
 
 
-# In[9]:
+# In[13]:
 
 
 def get_labels():
@@ -186,7 +186,7 @@ def get_labels():
     return labels.sort_values(["video","frame"])
 
 
-# In[10]:
+# In[14]:
 
 
 def create_video_label_arrays():
@@ -234,7 +234,7 @@ def create_video_label_arrays():
         np.save(path_cache + "/labels/" + video_name, np.array(vid_labels))
 
 
-# In[11]:
+# In[15]:
 
 
 def load_label_map():
@@ -260,7 +260,7 @@ def load_label_map():
     return label_map
 
 
-# In[12]:
+# In[16]:
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -330,7 +330,7 @@ class DataGenerator(keras.utils.Sequence):
         return x, y 
 
 
-# In[107]:
+# In[27]:
 
 
 class Data(object):
@@ -378,6 +378,7 @@ class Data(object):
         self.return_CNN_features = return_CNN_features
         self.augmentation = augmentation
         self.oversampling = oversampling
+        self.model_weights_path = model_weights_path
         
         # init model data
         self.x_train = []
@@ -431,15 +432,15 @@ class Data(object):
         
         # look up target size for pretrained model
         if pretrained_model_name is not None:
-            self.frame_size = pretrained_model_sizes[pretrained_model_name]
+            self.frame_size = pretrained_model_sizes[self.pretrained_model_name]
         
         # precompute resized frames (won't recompute if already resized)
         resize_frames(self.frame_size)
 
         # pre compute CNN features (won't recompute if already computed)
-        if return_CNN_features and pretrained_model_name is not None:
+        if self.return_CNN_features and self.pretrained_model_name is not None:
             # check if pass custom weights to precompute from
-            if model_weights_path is not None and custom_model_name is not None:
+            if self.model_weights_path is not None and self.custom_model_name is not None:
                 # precompute with custom weights input and name
                 precompute_CNN_features(self.pretrained_model_name, self.pooling, self.model_weights_path, self.custom_model_name)
             else:
@@ -449,7 +450,7 @@ class Data(object):
             
         # get preprocessor given pretrained if we will need to apply preprocessor 
         # (i.e. if return_CNN_features == False and pretrained_model_name != None)
-        if not return_CNN_features and pretrained_model_name is not None:
+        if not self.return_CNN_features and self.pretrained_model_name is not None:
             self.preprocess_input = load_pretrained_model_preprocessor(self.pretrained_model_name)
         
         
@@ -483,9 +484,9 @@ class Data(object):
                 ### feature sequences
                 #####################
                 
-                path_features = path_cache + 'features/' + pretrained_model_name + "/" + pooling + '/'
-                if not return_CNN_features and pretrained_model_name is not None:
-                    path_features = path_cache + 'features/' + pretrained_model_name + "__" + custom_model_name + "/" + pooling + '/'
+                path_features = path_cache + 'features/' + self.pretrained_model_name + "/" + self.pooling + '/'
+                if not self.return_CNN_features and self.pretrained_model_name is not None:
+                    path_features = path_cache + 'features/' + self.pretrained_model_name + "__" + self.custom_model_name + "/" + self.pooling + '/'
                 path_labels = path_cache + 'labels/'
                 
                 # read vid paths
@@ -505,7 +506,7 @@ class Data(object):
                     features = np.load(path_features + video_name + '.npy')
                     # build sequences
                     x = []
-                    for i in range(sequence_length, len(features) + 1):
+                    for i in range(self.sequence_length, len(features) + 1):
                         x.append(features[i-sequence_length:i])
                     x = np.array(x)
                     
@@ -516,7 +517,7 @@ class Data(object):
 
                     # temp lists to store sequences
                     y = []
-                    for i in range(sequence_length, len(labels) + 1):
+                    for i in range(self.sequence_length, len(labels) + 1):
                         y.append(labels[i-1])
                     y = (np.array(y))
                     
@@ -571,12 +572,12 @@ class Data(object):
                         frames = np.load(path_vid_resized  + video_name + '.npy')
 
                         # first apply preprocessing if pretrained model given
-                        if pretrained_model_name != None:
+                        if self.pretrained_model_name != None:
                             frames = self.preprocess_input(frames.astype(np.float32))
 
                         # build sequences
                         x = []
-                        for i in range(sequence_length, len(frames) + 1):
+                        for i in range(self.sequence_length, len(frames) + 1):
                             x.append(frames[i-sequence_length:i])
                         x = np.array(x)
 
@@ -587,7 +588,7 @@ class Data(object):
 
                         # temp lists to store sequences
                         y = []
-                        for i in range(sequence_length, len(labels) + 1):
+                        for i in range(self.sequence_length, len(labels) + 1):
                             y.append(labels[i-1])
                         y = (np.array(y))
 
@@ -628,9 +629,9 @@ class Data(object):
                 ### feature vectors
                 ###################
                 
-                path_features = path_cache + 'features/' + pretrained_model_name + "/" + pooling + '/'
-                if not return_CNN_features and pretrained_model_name is not None:
-                    path_features = path_cache + 'features/' + pretrained_model_name + "__" + custom_model_name + "/" + pooling + '/'
+                path_features = path_cache + 'features/' + self.pretrained_model_name + "/" + self.pooling + '/'
+                if not self.return_CNN_features and self.pretrained_model_name is not None:
+                    path_features = path_cache + 'features/' + self.pretrained_model_name + "__" + self.custom_model_name + "/" + self.pooling + '/'
                 
                 path_labels = path_cache + 'labels/'
                 
@@ -649,10 +650,7 @@ class Data(object):
                     ### load precomputed features
                     x = np.load(path_features + video_name + '.npy')
                     y = np.load(path_labels + video_name + '.npy')
-                    
-                    if x.shape[0] != y.shape[0]:
-                        print("XXX", path_video, x.shape, y.shape)
-                    
+
                     ### build output
                     if self.video_splits[video_name] == "train":
                         self.x_train.append(x)
@@ -696,7 +694,7 @@ class Data(object):
                         y = np.load(path_labels + video_name + '.npy')
 
                         # apply preprocessing if pretrained model given
-                        if pretrained_model_name != None:
+                        if self.pretrained_model_name != None:
                             x = self.preprocess_input(x.astype(np.float32))
 
                         ### build output
@@ -748,7 +746,7 @@ class Data(object):
         ### reshape list outputs (if not using generator)
         #################################################
         
-        if not return_generator:
+        if not self.return_generator:
             ## e.g. (9846, 224, 224, 3) for frames [return_CNN_features=True]
             ## or  (9846, 512) for features [return_CNN_features=False]
             self.x_train = np.concatenate(self.x_train, axis=0)
@@ -815,8 +813,8 @@ class Data(object):
 
         # store h5 files in subfolder in cache/sequences/ either with pretrained model name or resize name
         # since we need to run preprocessing for pretrained models but not for vanilla resizing (3DCNN)
-        if pretrained_model_name is not None:
-            path_h5_base += pretrained_model_name + '/'
+        if self.pretrained_model_name is not None:
+            path_h5_base += self.pretrained_model_name + '/'
         else:
             path_h5_base += str(self.frame_size[0]) + "_" + str(self.frame_size[1]) + '/' 
 
@@ -886,13 +884,17 @@ class Data(object):
                     total_rows_test += len(x)
 
             # calc shapes required for full sequence dataset
-            h5_shape_train_x = (total_rows_train, self.sequence_length, self.frame_size[0], self.frame_size[1], 3)
+            if self.sequence_length > 1:
+                h5_shape_train_x = (total_rows_train, self.sequence_length, self.frame_size[0], self.frame_size[1], 3)
+                h5_shape_valid_x = (total_rows_valid, self.sequence_length, self.frame_size[0], self.frame_size[1], 3)
+                h5_shape_test_x = (total_rows_test, self.sequence_length, self.frame_size[0], self.frame_size[1], 3)
+            else:
+                h5_shape_train_x = (total_rows_train, self.frame_size[0], self.frame_size[1], 3)
+                h5_shape_valid_x = (total_rows_valid, self.frame_size[0], self.frame_size[1], 3)
+                h5_shape_test_x = (total_rows_test, self.frame_size[0], self.frame_size[1], 3)
+                
             h5_shape_train_y = (total_rows_train, self.num_classes)
-
-            h5_shape_valid_x = (total_rows_valid, self.sequence_length, self.frame_size[0], self.frame_size[1], 3)
             h5_shape_valid_y = (total_rows_valid, self.num_classes)
-
-            h5_shape_test_x = (total_rows_test, self.sequence_length, self.frame_size[0], self.frame_size[1], 3)
             h5_shape_test_y = (total_rows_test, self.num_classes)
 
 
@@ -948,7 +950,7 @@ class Data(object):
                 frames = np.load(path_vid_resized  + video_name + '.npy')
                 
                 # first apply preprocessing if pretrained model given
-                if pretrained_model_name != None:
+                if self.pretrained_model_name != None:
                     frames = self.preprocess_input(frames.astype(np.float32))
                     
                 # build sequences
@@ -968,18 +970,35 @@ class Data(object):
                 y = (np.array(y))
 
                 ### write this vid's data to relevant h5 dataset
-                if self.video_splits[video_name] == "train":
-                    h5_train_x[h5_cursor_train:h5_cursor_train + x.shape[0], :, :, :, :] = x
-                    h5_train_y[h5_cursor_train:h5_cursor_train + y.shape[0], :] = y
-                    h5_cursor_train += len(x)
-                if self.video_splits[video_name] == "valid":
-                    h5_valid_x[h5_cursor_valid:h5_cursor_valid + x.shape[0], :, :, :, :] = x
-                    h5_valid_y[h5_cursor_valid:h5_cursor_valid + y.shape[0], :] = y
-                    h5_cursor_valid += len(x)
-                if self.video_splits[video_name] == "test":
-                    h5_test_x[h5_cursor_test:h5_cursor_test + x.shape[0], :, :, :, :] = x
-                    h5_test_y[h5_cursor_test:h5_cursor_test + y.shape[0], :] = y
-                    h5_cursor_test += len(x)
+                if self.sequence_length > 1:
+                    if self.video_splits[video_name] == "train":
+                        h5_train_x[h5_cursor_train:h5_cursor_train + x.shape[0], :, :, :, :] = x
+                        h5_train_y[h5_cursor_train:h5_cursor_train + y.shape[0], :] = y
+                        h5_cursor_train += len(x)
+                    if self.video_splits[video_name] == "valid":
+                        h5_valid_x[h5_cursor_valid:h5_cursor_valid + x.shape[0], :, :, :, :] = x
+                        h5_valid_y[h5_cursor_valid:h5_cursor_valid + y.shape[0], :] = y
+                        h5_cursor_valid += len(x)
+                    if self.video_splits[video_name] == "test":
+                        h5_test_x[h5_cursor_test:h5_cursor_test + x.shape[0], :, :, :, :] = x
+                        h5_test_y[h5_cursor_test:h5_cursor_test + y.shape[0], :] = y
+                        h5_cursor_test += len(x)
+                else:
+                    # remove sequence_length dimension
+                    x = np.squeeze(x)
+                    
+                    if self.video_splits[video_name] == "train":
+                        h5_train_x[h5_cursor_train:h5_cursor_train + x.shape[0], :, :, :] = x
+                        h5_train_y[h5_cursor_train:h5_cursor_train + y.shape[0], :] = y
+                        h5_cursor_train += len(x)
+                    if self.video_splits[video_name] == "valid":
+                        h5_valid_x[h5_cursor_valid:h5_cursor_valid + x.shape[0], :, :, :] = x
+                        h5_valid_y[h5_cursor_valid:h5_cursor_valid + y.shape[0], :] = y
+                        h5_cursor_valid += len(x)
+                    if self.video_splits[video_name] == "test":
+                        h5_test_x[h5_cursor_test:h5_cursor_test + x.shape[0], :, :, :] = x
+                        h5_test_y[h5_cursor_test:h5_cursor_test + y.shape[0], :] = y
+                        h5_cursor_test += len(x)
             
             # save total row counts to file
             with open(path_h5_base + 'h5_meta.json', 'w') as fp:
@@ -1009,6 +1028,31 @@ class Data(object):
                 
             # return total samples for each split so we can pass them to our DataGenerator
             return total_rows_train, total_rows_valid, total_rows_test
+
+
+# In[28]:
+
+
+### init generator
+# data = Data(sequence_length = 1, 
+#             return_CNN_features = False, 
+#             pretrained_model_name="vgg16",
+#             pooling = "max",
+#             return_generator=True,
+#             batch_size=32)
+#
+#
+### View batches
+# dd = []     # store all the generated data batches
+# labels = []   # store all the generated label batches
+# max_iter = 100  # maximum number of iterations, in each iteration one batch is generated; the proper value depends on batch size and size of whole data
+# i = 0
+# for d, l in data.generator_test:
+#     dd.append(d)
+#     labels.append(l)
+#     i += 1
+#     if i == max_iter:
+#         break
 
 
 # In[94]:
