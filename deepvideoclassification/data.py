@@ -125,6 +125,8 @@ def resize_frames(target_size):
     * 112 x 112 3D CNN 
     """
 
+    assert (target_size is not None), "target_size (or pretrained_model_name which implies a target_size) must be specified"
+    
     if not os.path.exists(path_cache + 'frames/' + str(target_size[0]) + "_" + str(target_size[1]) + '/'):
         
         os.makedirs(path_cache + 'frames/' + str(target_size[0]) + "_" + str(target_size[1]) + '/')
@@ -770,7 +772,6 @@ class Data(object):
         ###########
         ### shuffle
         ###########
-        print(self.x_train.shape, self.y_train.shape, len(self.paths_train))
         if self.sequence_length == 1:
             self.x_train, self.y_train, self.paths_train = shuffle(self.x_train, self.y_train, self.paths_train)
             self.x_valid, self.y_valid, self.paths_valid = shuffle(self.x_valid, self.y_valid, self.paths_valid)
@@ -832,7 +833,7 @@ class Data(object):
             paths_to_clear = [self.path_h5_train, self.path_h5_valid, self.path_h5_test, path_h5_base + 'h5_meta.json']
             for path_to_clear in paths_to_clear:                
                 if os.path.exists(path_to_clear):
-                    print("Removing partially created sequences cache file: {}".format(path_to_clear))
+                    # logging.info("Removing partially created sequences cache file: {}".format(path_to_clear))
                     os.remove(path_to_clear)
              
             if verbose:
