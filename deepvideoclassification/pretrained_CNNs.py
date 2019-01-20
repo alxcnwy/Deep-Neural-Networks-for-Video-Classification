@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import cv2
 import itertools
-from contextlib import redirect_stdout
+# from contextlib import redirect_stdout
 sys.path.append('..')
 
 

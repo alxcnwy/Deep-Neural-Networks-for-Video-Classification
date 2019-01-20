@@ -171,7 +171,7 @@ def get_labels():
     except ValueError as e:
         raise Exception("Labels file must contain columns ['video','frame','label','split'] - if you only have ['video','frame','label'], use Jupyter notebook in notebooks/add_splits_to_labels_file.ipynb to add train/valid/test splits to your labels file")
     except FileNotFoundError as e:
-        raise Exception("No labels found - please save labels file to /data/labels.csv") from e
+        raise Exception("No labels found - please save labels file to /data/labels.csv") 
 
     return labels.sort_values(["video","frame"])
 

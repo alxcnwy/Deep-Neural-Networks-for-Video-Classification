@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
-# whether to log each feature and sequence status
-verbose = True
-
-
-# In[4]:
-
 
 import os
 import sys
@@ -23,7 +14,7 @@ import cv2
 import gc
 import itertools
 from shutil import copyfile
-from contextlib import redirect_stdout
+# from contextlib import redirect_stdout
 sys.path.append('..')
 
 
@@ -55,22 +46,7 @@ pwd = os.getcwd().replace("notebooks","")
 path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
 
-
 # In[9]:
-
-
-# setup logging
-# any explicit log messages or uncaught errors to stdout and file /logs.log
-import logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s, [%(levelname)-8s] [%(filename)s:%(lineno)d] %(message)s',
-    handlers=[
-        logging.FileHandler("{0}/{1}.log".format(pwd, "logs")),
-        logging.StreamHandler()
-    ])
-# init logger
-logger = logging.getLogger()
 
 
 # In[10]:
@@ -131,7 +107,8 @@ class Architecture(object):
                 dropout = 0, convolution_kernel_size = 3, 
                 model_weights_path = None, 
                 batch_size = 32, 
-                verbose = False):
+                verbose = False,
+                logger = None):
         """
         Model object constructor. Contains Keras model object and training/evaluation methods. Writes model results to /models/_id_ folder
         
@@ -164,18 +141,11 @@ class Architecture(object):
         :batch_size: batch size used to fit model (default to 32)
         
         :verbose: whether to log progress updates
+        :logger: logger object
         """
     
         # required params
         self.model_id = model_id
-        
-        # create path based on model id
-        self.path_model = pwd + 'models/' + str(model_id) + '/'
-        if not os.path.exists(self.path_model):
-            os.makedirs(self.path_model)
-        else:
-            if not os.path.exists(self.path_model + 'results.json'):
-                logging.info("Model folder exists but no results found - potential error in previous model training")
         
         self.architecture = architecture
         self.sequence_length = sequence_length
@@ -218,6 +188,30 @@ class Architecture(object):
         assert (self.pretrained_model_name is not None or self.frame_size is not None), "Must specify one of pretrained_model_name or frame_size"
             
             
+        # init new logger if one was not passed to the class
+        self.logger = logger
+        if self.logger is None:
+            # setup logging
+            import logging
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s, [%(levelname)-8s] [%(filename)s:%(lineno)d] %(message)s',
+                handlers=[
+                    logging.FileHandler("{0}/{1}.log".format(pwd, "logs")),
+                    logging.StreamHandler()
+                ])
+            # init logger - will pass this to our architecture
+            self.logger = logging.getLogger()
+            
+            
+        # create path based on model id
+        self.path_model = pwd + 'models/' + str(model_id) + '/'
+        if not os.path.exists(self.path_model):
+            os.makedirs(self.path_model)
+        else:
+            if not os.path.exists(self.path_model + 'results.json'):
+                self.logger.info("Model folder exists but no results found - potential error in previous model training")
+            
         # init model and data objects for this architecture
         self.model = None
         self.data = None
@@ -243,7 +237,7 @@ class Architecture(object):
             
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = 1, 
                                 return_CNN_features = True, 
                                 pretrained_model_name= self.pretrained_model_name,
@@ -295,7 +289,7 @@ class Architecture(object):
             
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = 1, 
                                 return_CNN_features = False, 
                                 pretrained_model_name = self.pretrained_model_name,
@@ -355,7 +349,7 @@ class Architecture(object):
             
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = self.sequence_length, 
                                 return_CNN_features = True, 
                                 pretrained_model_name=self.pretrained_model_name,
@@ -425,7 +419,7 @@ class Architecture(object):
                 
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = self.sequence_length, 
                                 return_CNN_features = True, 
                                 pretrained_model_name = self.pretrained_model_name,
@@ -543,7 +537,7 @@ class Architecture(object):
                 
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = self.sequence_length, 
                                 return_CNN_features = False, 
                                 return_generator=True,
@@ -673,7 +667,7 @@ class Architecture(object):
             
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = 16, 
                                 return_CNN_features = False, 
                                 return_generator = True,
@@ -737,7 +731,7 @@ class Architecture(object):
             
             ### create data object for this architecture
             if self.verbose:
-                logging.info("Loading data")
+                self.loggerinfo("Loading data")
             self.data = Data(sequence_length = 16, 
                                 return_CNN_features = False, 
                                 return_generator = True,
@@ -785,15 +779,18 @@ class Architecture(object):
         # load weights of model if they exist
         if os.path.exists(self.path_model + 'model.h5'):
             if self.verbose:
-                logging.info("Loading saved model weights")
+                self.loggerinfo("Loading saved model weights")
             # model.load_weights(self.path_model + 'model.h5')            
             model = load_model(self.path_model + 'model.h5')
         
         # save architecture params to model folder
         params = self.__dict__.copy()
         params['data_shape'] = str(self.data)
+        # remove non-serializable objects first
         del params['model']
         del params['data']
+        del params['logger']
+        # save
         with open(self.path_model + 'params.json', 'w') as fp:
             json.dump(params, fp, indent=4, sort_keys=True)
     
@@ -825,7 +822,7 @@ class Architecture(object):
             self.model.layers[i].trainable = True
         
         if self.verbose:
-            logging.info("last {} layers of CNN set to trainable".format(num_layers))
+            self.loggerinfo("last {} layers of CNN set to trainable".format(num_layers))
             
 
     def fit(self, fit_round, learning_rate, epochs, patience):
@@ -863,9 +860,9 @@ class Architecture(object):
         self.model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
 
         # setup training callbacks
-        callback_stopper = EarlyStopping(monitor='val_acc', patience=patience, verbose=0)
+        callback_stopper = EarlyStopping(monitor='val_acc', patience=patience, verbose=self.verbose)
         callback_csvlogger = CSVLogger(self.path_model + 'training_round_' + str(fit_round) + '.log')
-        callback_checkpointer = ModelCheckpoint(self.path_model + 'model_round_' + str(fit_round) + '.h5', monitor='val_acc', save_best_only=True, verbose=verbose)
+        callback_checkpointer = ModelCheckpoint(self.path_model + 'model_round_' + str(fit_round) + '.h5', monitor='val_acc', save_best_only=True, verbose=self.verbose)
         callbacks = [callback_stopper, callback_checkpointer, callback_csvlogger]
 
         # fit model
@@ -919,8 +916,10 @@ class Architecture(object):
         results['data_total_rows_train'] = self.data.total_rows_train
         results['data_total_rows_valid'] = self.data.total_rows_valid
         results['data_total_rows_test'] = self.data.total_rows_test
+        # delete non-serializable objects from the architecture class
         del results['model']
         del results['data']
+        del results['logger']
         results['model_param_count'] = self.model.count_params()
         
         
@@ -1045,8 +1044,7 @@ class Architecture(object):
         
         # save model summary to model folder
         with open(self.path_model + 'model_summary.txt', 'w') as f:
-            with redirect_stdout(f):
-                self.model.summary()
+            self.model.summary()
                 
         # save model config to model folder
         self.model.save(self.path_model + "model_config.h5")
@@ -1137,8 +1135,8 @@ class Architecture(object):
         results['fit_test_acc'] = test_acc
         
         if self.verbose:
-            logger.info(json.dumps(results, indent=4, sort_keys=True))
-            logger.info("model {} test acc: {}".format(self.model_id, test_acc))
+            self.logger.info(json.dumps(results, indent=4, sort_keys=True))
+            self.logger.info("model {} test acc: {}".format(self.model_id, test_acc))
         
         
         ##################
@@ -1153,6 +1151,4 @@ class Architecture(object):
         if response != 0:
             logging.error("ERROR syncing model_id = {}".format(self.model_id))
 
-        
-        
         

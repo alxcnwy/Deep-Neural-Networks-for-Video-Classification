@@ -7,6 +7,7 @@ old_models/*
 results/*
 cache/*
 *.log
+*.out
 nohup.out
 notebooks/.ipynb_checkpoints/
 .ipynb_checkpoints/

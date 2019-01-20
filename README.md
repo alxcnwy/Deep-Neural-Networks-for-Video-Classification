@@ -32,4 +32,4 @@ The model was trained on an aws `p2.xlarge` instance with the `nvidia deep learn
 
 * Sequence length calc in h5 feature gen
 * Generate features on resized frames instead of raw frames
-
+* Worker should run without a worker id for single GPU training
