@@ -23,7 +23,7 @@ flags.DEFINE_string('GPU_ID', '', 'ID of GPU to be used by this worker- same as 
 #
 experiment_batch_name = flags.FLAGS.experiment_batch_name
 WORKER_ID = flags.FLAGS.WORKER_ID
-GPU_ID = flags.FLAGS.WORKER_ID
+GPU_ID = flags.FLAGS.GPU_ID
 if GPU_ID is None or GPU_ID=="":
     GPU_ID = WORKER_ID
 #
