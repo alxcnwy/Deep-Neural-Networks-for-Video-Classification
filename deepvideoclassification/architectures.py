@@ -903,10 +903,12 @@ class Architecture(object):
         if epochs_trained == 0:
             # trained but didn't stop early
             if len(history.history) > 0:
-                epochs_trained = epochs
+                epochs_trained = (epochs - 1)
         else:
             # best validation accuracy is (patience-1) epochs before stopped
             epochs_trained -= (patience - 1)
+            
+           
         
         # return fit history and the epoch that the early stopper completed on
         return history, epochs_trained
@@ -1116,12 +1118,13 @@ class Architecture(object):
         plt.figure(figsize=(8,8))
         plot_confusion_matrix(cnf_matrix, classes=class_names, title='Confusion matrix, without normalization')
         plt.savefig(self.path_model + 'confusion_matrix.png', bbox_inches='tight')
+        plt.clf()
 
         # Plot normalized confusion matrix
         plt.figure(figsize=(8,8))
         plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True, title='Normalized confusion matrix')
         plt.savefig(self.path_model + 'confusion_matrix_normalized.png', bbox_inches='tight')
-        
+        plt.clf()
         
         ##########################
         ### Compute raw error rate
