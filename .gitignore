@@ -1,4 +1,5 @@
 deepvideoclassification/.ipynb_checkpoints/
+deepvideoclassification/__pycache__/
 scripts/nohup.out
 data/*
 models/*
