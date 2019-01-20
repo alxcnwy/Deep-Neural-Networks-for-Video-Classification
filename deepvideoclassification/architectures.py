@@ -1152,5 +1152,12 @@ class Architecture(object):
         self.results = results
         with open(self.path_model + 'results.json', 'w') as fp:
             json.dump(results, fp, indent=4, sort_keys=True)
+            
+        # sync model outputs to s3
+        response = os.system("aws s3 sync " + self.path_model + " s3://thesisvids/penguins/models/" + str(self.model_id) + "/")
+        if response != 0:
+            logging.error("ERROR syncing model_id = {}".format(self.model_id))
 
+        
+        
         
