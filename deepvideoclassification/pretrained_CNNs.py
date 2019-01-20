@@ -48,16 +48,13 @@ path_data = pwd + 'data/'
 import logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    format='%(asctime)s, [%(levelname)-8s] [%(filename)s:%(lineno)d] %(message)s',
     handlers=[
-        logging.FileHandler("{0}/{1}.log".format(pwd, "logs_test")),
+        logging.FileHandler("{0}/{1}.log".format(pwd, "logs")),
         logging.StreamHandler()
     ])
 # init logger
 logger = logging.getLogger()
-
-logger.info("hi from pretrained")
-
 
 # # Pretrained_CNNs
 
