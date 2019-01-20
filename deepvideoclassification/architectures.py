@@ -102,13 +102,8 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
-#     if normalize:
-#         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-#         print("Normalized confusion matrix")
-#     else:
-#         print('Confusion matrix, without normalization')
-
-#     print(cm)
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
@@ -917,7 +912,7 @@ class Architecture(object):
         return history, epochs_trained
 
     
-    def train_model(self, epochs = 10, patience = 3):
+    def train_model(self, epochs = 20, patience = 3):
         """
         Run several rounds of fitting to train model, reducing learning rate after each round
         
@@ -949,6 +944,11 @@ class Architecture(object):
         # do first round of fitting
         history1, stopped_epoch1 = self.fit(fit_round = 1, learning_rate = 0.001, epochs = epochs, patience = patience)
         
+        print('H1', history1.history)
+        print('stopped_epoch1',stopped_epoch1)
+        print(len(history1.history['val_acc']))
+        print(history1.history['val_acc'][stopped_epoch1])
+        
         # update best fit round (only 1 round done so this is best so far)
         best_val_acc_1 = history1.history['val_acc'][stopped_epoch1]
         best_fit_round = 1
@@ -967,6 +967,11 @@ class Architecture(object):
         # reduce learning rate and fit some more
         history2, stopped_epoch2 = self.fit(fit_round = 2, learning_rate = 0.0001, epochs = epochs, patience = patience)
         
+        print('H2', history2.history)
+        print('stopped_epoch2',stopped_epoch2)
+        print(len(history2.history['val_acc']))
+        print(history2.history['val_acc'][stopped_epoch2])
+        
         # update best fit round
         best_val_acc_2 = history2.history['val_acc'][stopped_epoch2]
         if best_val_acc_2 > best_fit_round_val_acc:
@@ -984,6 +989,11 @@ class Architecture(object):
         
         # reduce learning rate and fit some more
         history3, stopped_epoch3 = self.fit(fit_round = 3, learning_rate = 0.00001, epochs = epochs, patience = patience)
+        
+        print('H3', history3.history)
+        print('stopped_epoch3',stopped_epoch3)
+        print(len(history3.history['val_acc']))
+        print(history3.history['val_acc'][stopped_epoch3])
         
         # update best fit round
         best_val_acc_3 = history3.history['val_acc'][stopped_epoch3]
@@ -1132,7 +1142,7 @@ class Architecture(object):
         results['fit_test_acc'] = test_acc
         
         if self.verbose:
-            logger.info(str(results))
+            logger.info(json.dumps(results, indent=4, sort_keys=True))
             logger.info("model {} test acc: {}".format(self.model_id, test_acc))
         
         
