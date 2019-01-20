@@ -34,15 +34,10 @@ import keras
 # In[8]:
 
 
-# import pretrained model functions
-from deepvideoclassification.models import precompute_CNN_features
-from deepvideoclassification.models import load_pretrained_model_preprocessor
-from deepvideoclassification.models import load_pretrained_model
-
-# import pretrained model properties
-from deepvideoclassification.models import pretrained_model_len_features
-from deepvideoclassification.models import pretrained_model_sizes
-from deepvideoclassification.models import pretrained_model_names, poolings
+# load preprocessing functions
+from deepvideoclassification.pretrained_CNNs import load_pretrained_model, load_pretrained_model_preprocessor, precompute_CNN_features
+# load preprocessing constants
+from deepvideoclassification.pretrained_CNNs import pretrained_model_len_features, pretrained_model_sizes, poolings
 
 
 # In[9]:
