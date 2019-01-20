@@ -381,16 +381,23 @@ class Data(object):
         self.augmentation = augmentation
         self.oversampling = oversampling
         self.model_weights_path = model_weights_path
+        self.custom_model_name = custom_model_name
         
-        # init model data
-        self.x_train = []
-        self.y_train = []
-        #
-        self.x_valid = []
-        self.y_valid = []
-        # 
-        self.x_test = []
-        self.y_test = []
+        self.return_generator = return_generator
+        self.batch_size = batch_size
+        
+        self.verbose = verbose
+        
+        if not self.return_generator:
+            # init model data when loading data into memory
+            self.x_train = []
+            self.y_train = []
+            #
+            self.x_valid = []
+            self.y_valid = []
+            # 
+            self.x_test = []
+            self.y_test = []
         
         # fix case sensitivity
         if type(self.pretrained_model_name) == str:
@@ -456,11 +463,6 @@ class Data(object):
             self.preprocess_input = load_pretrained_model_preprocessor(self.pretrained_model_name)
         
         
-        self.verbose = verbose
-        
-        self.return_generator = return_generator
-        self.batch_size = batch_size
-        
         # do some checks
         if self.return_generator:
             assert self.batch_size != None, "batch size required to construct generator"
@@ -497,8 +499,8 @@ class Data(object):
                 # loop over all vids and load precomputed features into memory as sequences
                 for c, path_video in enumerate(path_videos):
 
-                    if verbose:
-                        logging.info("Loading features sequence data into memory {}/{}".format(c+1,len(path_videos)))
+#                     if verbose:
+#                         logging.info("Loading features sequence data into memory {}/{}".format(c+1,len(path_videos)))
                     
                     # get vid name from path
                     video_name = path_video.split("/")[-2]
@@ -563,8 +565,8 @@ class Data(object):
                     # (recommend using generator if lots of data to avoid out of memory issues)
                     for c, path_video in enumerate(path_videos):
                         
-                        if verbose:
-                            logging.info("Loading frame sequence data into memory {}/{}".format(c+1,len(path_videos)))
+#                         if verbose:
+#                             logging.info("Loading frame sequence data into memory {}/{}".format(c+1,len(path_videos)))
 
                         # get vid name from path
                         video_name = path_video.split("/")[-2]
@@ -643,8 +645,8 @@ class Data(object):
                 # loop over all vids and load precomputed features
                 for c, path_video in enumerate(path_videos):
 
-                    if verbose:
-                        logging.info("Loading features data into memory: {}/{}".format(c+1,len(path_videos)))
+#                     if verbose:
+#                         logging.info("Loading features data into memory: {}/{}".format(c+1,len(path_videos)))
                     
                     # get vid name from path
                     video_name = path_video.split("/")[-2]
@@ -663,6 +665,7 @@ class Data(object):
                     if self.video_splits[video_name] == "test":
                         self.x_test.append(x)
                         self.y_test.append(y)
+                        
             else:
                 
                 if verbose:
@@ -685,8 +688,8 @@ class Data(object):
                     # loop over all vids and load frames into memory
                     for c, path_video in enumerate(path_videos):
 
-                        if verbose:
-                            logging.info("Loading frames into memory: {}/{}".format(c+1,len(path_videos)))
+#                         if verbose:
+#                             logging.info("Loading frames into memory: {}/{}".format(c+1,len(path_videos)))
 
                         # get vid name from path
                         video_name = path_video.split("/")[-2]
@@ -709,6 +712,7 @@ class Data(object):
                         if self.video_splits[video_name] == "test":
                             self.x_test.append(x)
                             self.y_test.append(y)
+
                 else:
                     #############################
                     ### Build sequences generator
@@ -717,12 +721,12 @@ class Data(object):
                     # compute and save h5 sequence files (save_frame_sequences_to_h5 returns 
                     # the sequence sizes which we need for our generator)
                     self.total_rows_train, self.total_rows_valid, self.total_rows_test = self.save_frame_sequences_to_h5()
-                    
+                                        
                     # init generators
                     self.generator_train = DataGenerator(self.batch_size, self.path_h5_train, self.total_rows_train)
                     self.generator_valid = DataGenerator(self.batch_size, self.path_h5_valid, self.total_rows_valid)
                     self.generator_test = DataGenerator(self.batch_size, self.path_h5_test, self.total_rows_test)
-            
+
             
         #################################
         ### get file paths for each split
@@ -758,12 +762,20 @@ class Data(object):
             self.x_test = np.concatenate(self.x_test, axis=0)
             self.y_test = np.concatenate(self.y_test, axis=0)
             
+            self.total_rows_train = len(self.x_train)
+            self.total_rows_valid = len(self.x_valid)
+            self.total_rows_test = len(self.x_test)
+            
             # shuffle train and validation set
             self.shuffle()
             
+        # update progress    
+        if self.verbose:
+            print("Done initializing data with #samples: train={}, valid={}, test={}".format(self.total_rows_train, self.total_rows_valid, self.total_rows_test))
+
 
     def __str__(self):
-        return "x_train: {}, y_train: {} ... x_valid: {}, y_valid: {} ... x_test: {}, y_test: {}".format(self.x_train.shape,self.y_train.shape,self.x_valid.shape,self.y_valid.shape,self.x_test.shape,self.y_test.shape)
+        return "#rows: train={}, valid={}, test={} ".format(self.total_rows_train, self.total_rows_valid, self.total_rows_train)
             
     def shuffle(self):
         """
@@ -825,9 +837,10 @@ class Data(object):
         self.path_h5_train = path_h5_base + 'h5_' + str(self.sequence_length) + '_train.h5'
         self.path_h5_valid = path_h5_base + 'h5_' + str(self.sequence_length) + '_valid.h5'
         self.path_h5_test = path_h5_base + 'h5_' + str(self.sequence_length) + '_test.h5'
+        self.path_h5_meta = path_h5_base + 'h5_' + str(self.sequence_length) + '_meta.h5'
     
         # build h5 file if doesn't exists()
-        if not os.path.exists(self.path_h5_train) or not os.path.exists(self.path_h5_valid) or not os.path.exists(self.path_h5_test) or not os.path.exists(path_h5_base + 'h5_meta.json'):
+        if not os.path.exists(self.path_h5_train) or not os.path.exists(self.path_h5_valid) or not os.path.exists(self.path_h5_test) or not os.path.exists(self.path_h5_meta):
             
             # delete partially created cache
             paths_to_clear = [self.path_h5_train, self.path_h5_valid, self.path_h5_test, path_h5_base + 'h5_meta.json']
@@ -862,8 +875,8 @@ class Data(object):
             # loop over all vids and resize frames, saving to new folder in /cache/frames/
             for c, path_video in enumerate(path_videos):
                                 
-                if verbose:
-                    logging.info("Computing frame sequence h5 files: {}/{} [precompute]".format(c+1,len(path_videos)))
+#                 if verbose:
+#                     logging.info("Computing frame sequence h5 files: {}/{} [precompute]".format(c+1,len(path_videos)))
 
                 # get vid name from path
                 video_name = path_video.split("/")[-2]
@@ -940,8 +953,8 @@ class Data(object):
             # loop over all vids and build sequences file
             for c, path_video in enumerate(path_videos):
                 
-                if verbose:
-                    logging.info("Computing frame sequence h5 files: {}/{} [build h5 file]".format(c+1,len(path_videos)))
+#                 if verbose:
+#                     logging.info("Computing frame sequence h5 files: {}/{} [build h5 file]".format(c+1,len(path_videos)))
 
                 # get vid name from path
                 video_name = path_video.split("/")[-2]
@@ -1002,7 +1015,7 @@ class Data(object):
                         h5_cursor_test += len(x)
             
             # save total row counts to file
-            with open(path_h5_base + 'h5_meta.json', 'w') as fp:
+            with open(self.path_h5_meta, 'w') as fp:
                 json.dump({'total_rows_train':total_rows_train,
                            'total_rows_valid': total_rows_valid,
                            'total_rows_test':total_rows_test}
@@ -1021,7 +1034,7 @@ class Data(object):
             # so we can pass them to our DataGenerator
             total_rows_train, total_rows_valid, total_rows_test = None, None, None
             
-            with open(path_h5_base + 'h5_meta.json', 'r') as fp:
+            with open(self.path_h5_meta, 'r') as fp:
                 h5_meta = json.load(fp)
                 total_rows_train = h5_meta['total_rows_train']
                 total_rows_valid = h5_meta['total_rows_valid']
