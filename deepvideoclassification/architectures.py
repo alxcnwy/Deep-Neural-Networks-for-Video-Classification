@@ -22,6 +22,7 @@ from PIL import Image
 import cv2
 import gc
 import itertools
+from shutil import copyfile
 from contextlib import redirect_stdout
 sys.path.append('..')
 
@@ -49,7 +50,8 @@ from sklearn.metrics import confusion_matrix
 
 
 # setup paths
-pwd = os.getcwd().replace("deepvideoclassification","")
+# pwd = os.getcwd().replace("deepvideoclassification","")
+pwd = os.getcwd().replace("notebooks","")
 path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
 
@@ -797,12 +799,8 @@ class Architecture(object):
         if os.path.exists(self.path_model + 'model.h5'):
             if self.verbose:
                 logging.info("Loading saved model weights")
-            model.load_weights(self.path_model + 'model.h5')            
-        
-        # save model summary to model folder
-        with open(self.path_model + 'model_summary.txt', 'w') as f:
-            with redirect_stdout(f):
-                self.model.summary()
+            # model.load_weights(self.path_model + 'model.h5')            
+            model = load_model(self.path_model + 'model.h5')
         
         # save architecture params to model folder
         params = self.__dict__.copy()
@@ -813,7 +811,113 @@ class Architecture(object):
             json.dump(params, fp, indent=4, sort_keys=True)
     
     
-    def train_model(self):
+    def make_last_layers_trainable(self, num_layers):
+        """
+        Set the last *num_layers* non-trainable layers to trainable  
+
+        NB to be used with model_base and assumes name = "top_xxx" added to each top layer to know 
+        to ignore that layer when looping through layers from top backwards
+
+        :num_layers: number of layers from end of model (that are currently not trainable) to be set as trainable
+        """
+
+        # get index of last non-trainable layer
+        # (the layers we added on top of model_base are already trainable=True)
+        # ...
+        # need to find last layer of base model and set that (and previous num_layers)
+        # to trainable=True via this method
+
+        # find last non-trainable layer index
+        idx_not_trainable = 0
+        for i, l in enumerate(self.model.layers):
+            if "top" not in l.name:
+                idx_not_trainable = i
+
+        # set last non-trainable layer and num_layers prior to trainable=True
+        for i in reversed(range(idx_not_trainable-num_layers+1, idx_not_trainable+1)):
+            self.model.layers[i].trainable = True
+        
+        if self.verbose:
+            logging.info("last {} layers of CNN set to trainable".format(num_layers))
+            
+
+    def fit(self, fit_round, learning_rate, epochs, patience):
+        """
+        Compile and fit model for *epochs* rounds of training, dividing learning rate by 10 after each round
+
+        Fitting will stop if val_acc does not improve for at least patience epochs
+
+        Only the best weights will be kept
+
+        The model is saved to /models/*model_id*/
+
+        Good practice is to decrease the learning rate by a factor of 10 after each plateau and train some more 
+        (after first re-loading best weights from previous training round)...
+
+        for example (not exact example because this fit method has been refactored into the architecture object but the principle remains):
+            fit_history = fit(model_id, model, data, learning_rate = 0.001, epochs = 30)
+            model.load_weights(path_model + "model.h5")
+            model = fit(model, 5)
+            fit_history = train(model_id, model, data, learning_rate = 0.0001, epochs = 30)
+
+        :fit_round: keep track of which round of learning rate annealing we're on
+        :learning_rate: learning rate parameter for Adam optimizer (default is 0.001)
+        :epochs: number of training epochs per fit round, subject to patience setting - good default is 30 or more
+        :patience: how many epochs without val_acc improvement before stopping fit round (good default is 5) 
+        
+        :verbose: print progress
+
+        """
+
+        # create optimizer with given learning rate 
+        opt = Adam(lr = learning_rate)
+
+        # compile model
+        self.model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+
+        # setup training callbacks
+        callback_stopper = EarlyStopping(monitor='val_acc', patience=patience, verbose=0)
+        callback_csvlogger = CSVLogger(self.path_model + 'training_round_' + str(fit_round) + '.log')
+        callback_checkpointer = ModelCheckpoint(self.path_model + 'model_round_' + str(fit_round) + '.h5', monitor='val_acc', save_best_only=True, verbose=verbose)
+        callbacks = [callback_stopper, callback_checkpointer, callback_csvlogger]
+
+        # fit model
+        if self.data.return_generator == True:
+            # train using generator
+            history = self.model.fit_generator(generator=self.data.generator_train,
+                validation_data=self.data.generator_valid,
+                use_multiprocessing=True,
+                workers=CPU_COUNT,
+                epochs=epochs,
+                callbacks=callbacks,
+                shuffle=True,
+                verbose=self.verbose)
+        else:
+            # train using full dataset
+            history = self.model.fit(self.data.x_train, self.data.y_train, 
+                validation_data=(self.data.x_valid, self.data.y_valid),
+                batch_size=self.batch_size,
+                epochs=epochs,
+                callbacks=callbacks,
+                shuffle=True,
+                verbose=self.verbose)
+
+        # get number of epochs actually trained (might have early stopped)
+        epochs_trained = callback_stopper.stopped_epoch
+        
+        if epochs_trained == 0:
+            # trained but didn't stop early
+            if len(history.history) > 0:
+                epochs_trained = epochs
+        else:
+            # best validation accuracy is (patience-1) epochs before stopped
+            epochs_trained -= (patience - 1)
+        
+        # return fit history and the epoch that the early stopper completed on
+        return history, epochs_trained
+
+    
+    def train_model(self, epochs = 10, patience = 3):
         """
         Run several rounds of fitting to train model, reducing learning rate after each round
         
@@ -839,26 +943,68 @@ class Architecture(object):
         start = datetime.datetime.now()
         results['fit_dt_train_start'] = start.strftime("%Y-%m-%d %H:%M:%S")
         
+        
+        ### Fit round 1
+        
         # do first round of fitting
-        history1, stopped_epoch1 = self.fit(learning_rate = 0.001)
+        history1, stopped_epoch1 = self.fit(fit_round = 1, learning_rate = 0.001, epochs = epochs, patience = patience)
+        
+        # update best fit round (only 1 round done so this is best so far)
+        best_val_acc_1 = history1.history['val_acc'][stopped_epoch1]
+        best_fit_round = 1
+        best_fit_round_val_acc = best_val_acc_1
+        #
+        best_fit_round_train_acc = history1.history['acc'][stopped_epoch1]
+        best_fit_round_train_loss = history1.history['loss'][stopped_epoch1]
+        best_fit_round_val_loss = history1.history['val_loss'][stopped_epoch1]
+        
+        
+        ### Fit round 2
         
         # load best model weights so far
-        self.model.load_weights(self.path_model + 'model.h5')
+        model = load_model(self.path_model + 'model_round_' + str(best_fit_round) + '.h5')
         
         # reduce learning rate and fit some more
-        history2, stopped_epoch2 = self.fit(learning_rate = 0.0001)
+        history2, stopped_epoch2 = self.fit(fit_round = 2, learning_rate = 0.0001, epochs = epochs, patience = patience)
+        
+        # update best fit round
+        best_val_acc_2 = history2.history['val_acc'][stopped_epoch2]
+        if best_val_acc_2 > best_fit_round_val_acc:
+            best_fit_round_val_acc = best_val_acc_2
+            best_fit_round_train_acc = history2.history['acc'][stopped_epoch2]
+            best_fit_round_train_loss = history2.history['loss'][stopped_epoch2]
+            best_fit_round_val_loss = history2.history['val_loss'][stopped_epoch2]
+            best_fit_round = 2
+            
+            
+        ### Fit round 3
         
         # load best model weights so far
-        self.model.load_weights(self.path_model + 'model.h5')
+        model = load_model(self.path_model + 'model_round_' + str(best_fit_round) + '.h5')
         
         # reduce learning rate and fit some more
-        history3, stopped_epoch3 = self.fit(learning_rate = 0.00001)
+        history3, stopped_epoch3 = self.fit(fit_round = 3, learning_rate = 0.00001, epochs = epochs, patience = patience)
+        
+        # update best fit round
+        best_val_acc_3 = history3.history['val_acc'][stopped_epoch3]
+        if best_val_acc_3 > best_fit_round_val_acc:
+            best_fit_round_val_acc = best_val_acc_3
+            best_fit_round_train_acc = history3.history['acc'][stopped_epoch3]
+            best_fit_round_train_loss = history3.history['loss'][stopped_epoch3]
+            best_fit_round_val_loss = history3.history['val_loss'][stopped_epoch3]
+            best_fit_round = 3
+        
+        
+        ### Finish fit process
         
         # end time training
         end = datetime.datetime.now()    
         results['fit_dt_train_end']  = end.strftime("%Y-%m-%d %H:%M:%S")
         results['fit_dt_train_duration_seconds']  = str((end - start).total_seconds()).split(".")[0]
         
+        # set best weights file across the fit rounds
+        print("best fit round",best_fit_round, best_fit_round_val_acc)
+        copyfile(self.path_model + 'model_round_' + str(best_fit_round) + '.h5', self.path_model + 'model_best.h5')
         
         #################
         ### build results
@@ -887,10 +1033,19 @@ class Architecture(object):
         
         # add 3 = 1 for each training round because stopped_epoch is 0 indexed
         results['fit_num_epochs'] = stopped_epoch1 + stopped_epoch2 + stopped_epoch3 + 3
-        results['fit_val_acc'] = list(fit_history.tail(1)['val_acc'])[0]
-        results['fit_train_acc'] = list(fit_history.tail(1)['acc'])[0]
-        results['fit_val_loss'] = list(fit_history.tail(1)['val_loss'])[0]
-        results['fit_train_loss'] = list(fit_history.tail(1)['loss'])[0]
+        results['fit_val_acc'] = best_fit_round_val_acc
+        results['fit_train_acc'] = best_fit_round_train_acc
+        results['fit_val_loss'] = best_fit_round_val_loss
+        results['fit_train_loss'] = best_fit_round_train_loss
+        results['fit_best_round'] = best_fit_round
+        
+        # save model summary to model folder
+        with open(self.path_model + 'model_summary.txt', 'w') as f:
+            with redirect_stdout(f):
+                self.model.summary()
+                
+        # save model config to model folder
+        self.model.save(self.path_model + "model_config.h5")
 
         #######################
         ### Predict on test set
@@ -989,108 +1144,3 @@ class Architecture(object):
             json.dump(results, fp, indent=4, sort_keys=True)
 
         
-    def fit(self, learning_rate = 0.001, epochs = 30, patience=5):
-        """
-        Compile and fit model for *epochs* rounds of training, dividing learning rate by 10 after each round
-
-        Fitting will stop if val_acc does not improve for at least patience epochs
-
-        Only the best weights will be kept
-
-        The model is saved to /models/*model_id*/
-
-        Good practice is to decrease the learning rate by a factor of 10 after each plateau and train some more 
-        (after first re-loading best weights from previous training round)...
-
-        for example (not exact example because this fit method has been refactored into the architecture object but the principle remains):
-            fit_history = fit(model_id, model, data, learning_rate = 0.001, epochs = 30)
-            model.load_weights(path_model + "model.h5")
-            model = fit(model, 5)
-            fit_history = train(model_id, model, data, learning_rate = 0.0001, epochs = 30)
-
-        :learning_rate: learning rate parameter for Adam optimizer (default is 0.001)
-
-        :epochs: number of training epochs per fit round (subject to patience)
-        :batch_size: number of samples in each batch
-        :patience: how many epochs without val_acc improvement before stopping fit round
-        :verbose: print progress
-
-        """
-
-        # create optimizer with given learning rate 
-        opt = Adam(lr = learning_rate)
-
-        # compile model
-        self.model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
-
-        # setup training callbacks
-        callback_stopper = EarlyStopping(monitor='val_acc', patience=patience, verbose=0)
-        callback_csvlogger = CSVLogger(self.path_model + 'training.log')
-        callback_checkpointer = ModelCheckpoint(self.path_model +  'model.h5', monitor='val_acc', save_best_only=True, verbose=verbose)
-        callbacks = [callback_stopper, callback_checkpointer, callback_csvlogger]
-
-        # fit model
-        if self.data.return_generator == True:
-            # train using generator
-            history = self.model.fit_generator(generator=self.data.generator_train,
-                validation_data=self.data.generator_valid,
-                use_multiprocessing=True,
-                workers=CPU_COUNT,
-                epochs=epochs,
-                callbacks=callbacks,
-                shuffle=True,
-                verbose=self.verbose)
-        else:
-            # train using full dataset
-            history = self.model.fit(self.data.x_train, self.data.y_train, 
-                validation_data=(self.data.x_valid, self.data.y_valid),
-                batch_size=self.batch_size,
-                epochs=epochs,
-                callbacks=callbacks,
-                shuffle=True,
-                verbose=self.verbose)
-
-        # get number of epochs actually trained (might have early stopped)
-        epochs_trained = callback_stopper.stopped_epoch
-        
-        if epochs_trained == 0:
-            # trained but didn't stop early
-            if len(history.history) > 0:
-                epochs_trained = epochs
-        else:
-            # subtract patience from stop point to get actual peak epoch for this fitting round
-            epochs_trained -= patience 
-        
-        # return fit history and the epoch that the early stopper completed on
-        return history, epochs_trained
-        
-        
-    def make_last_layers_trainable(self, num_layers):
-        """
-        Set the last *num_layers* non-trainable layers to trainable  
-
-        NB to be used with model_base and assumes name = "top_xxx" added to each top layer to know 
-        to ignore that layer when looping through layers from top backwards
-
-        :num_layers: number of layers from end of model (that are currently not trainable) to be set as trainable
-        """
-
-        # get index of last non-trainable layer
-        # (the layers we added on top of model_base are already trainable=True)
-        # ...
-        # need to find last layer of base model and set that (and previous num_layers)
-        # to trainable=True via this method
-
-        # find last non-trainable layer index
-        idx_not_trainable = 0
-        for i, l in enumerate(self.model.layers):
-            if "top" not in l.name:
-                idx_not_trainable = i
-
-        # set last non-trainable layer and num_layers prior to trainable=True
-        for i in reversed(range(idx_not_trainable-num_layers+1, idx_not_trainable+1)):
-            self.model.layers[i].trainable = True
-        
-        if self.verbose:
-            logging.info("last {} layers of CNN set to trainable".format(num_layers))
-

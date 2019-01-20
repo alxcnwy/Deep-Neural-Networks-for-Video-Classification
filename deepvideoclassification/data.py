@@ -44,10 +44,10 @@ from deepvideoclassification.pretrained_CNNs import pretrained_model_len_feature
 
 
 # setup paths
-pwd = os.getcwd().replace("deepvideoclassification","")
+# pwd = os.getcwd().replace("deepvideoclassification","")
+pwd = os.getcwd().replace("notebooks","")
 path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
-
 
 # In[10]:
 
@@ -91,6 +91,7 @@ def get_video_paths():
     Functionality to use different parts of a video as train/valid/test 
     not currently implemented.
     """
+    
     path_videos = []
     for filename in os.listdir(path_data):
         if os.path.isdir(os.path.join(path_data, filename)):

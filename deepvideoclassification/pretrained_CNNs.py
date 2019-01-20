@@ -34,7 +34,8 @@ from keras.preprocessing.image import img_to_array
 
 
 # setup paths
-pwd = os.getcwd().replace("deepvideoclassification","")
+# pwd = os.getcwd().replace("deepvideoclassification","")
+pwd = os.getcwd().replace("notebooks","")
 path_cache = pwd + 'cache/'
 path_data = pwd + 'data/'
 
