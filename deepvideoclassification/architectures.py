@@ -439,17 +439,16 @@ class Architecture(object):
             # layer 1 (sequence layer)
             if sequence_model == "LSTM":
                 model.add(LSTM(self.layer_1_size, return_sequences=return_sequences_1, dropout=self.dropout, 
-                     
-                               archinput_shape=(self.sequence_length, self.num_features)))
+                                input_shape=(self.sequence_length, self.num_features)))
             elif sequence_model == "SimpleRNN":
                 model.add(SimpleRNN(self.layer_1_size, return_sequences=return_sequences_1, dropout=self.dropout, 
-                               input_shape=(self.sequence_length, self.num_features)))
+                                input_shape=(self.sequence_length, self.num_features)))
             elif sequence_model == "GRU":
                 model.add(GRU(self.layer_1_size, return_sequences=return_sequences_1, dropout=self.dropout, 
-                               input_shape=(self.sequence_length, self.num_features)))
+                                input_shape=(self.sequence_length, self.num_features)))
             elif sequence_model == "Convolution1D":
                 model.add(Convolution1D(self.layer_1_size, kernel_size = self.convolution_kernel_size, padding = 'valid', 
-                               input_shape=(self.sequence_length, self.num_features)))
+                                input_shape=(self.sequence_length, self.num_features)))
                 if layer_2_size == 0 or sequence_model_layers == 1:
                     model.add(Flatten())
             else:
