@@ -499,7 +499,7 @@ class Architecture(object):
                     model.add(Flatten())
 
             # final flatten if needed
-            if model.layers[-1].output_shape != (None, self.data.num_classes):
+            if model.layers[-1].output_shape == 3:
                 model.add(Flatten())
 
             # classifier layer
