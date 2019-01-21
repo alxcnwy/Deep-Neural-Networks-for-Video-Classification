@@ -498,9 +498,8 @@ class Architecture(object):
                 if return_sequences_2 == True: 
                     model.add(Flatten())
 
-            # final flatten if needed
-            if model.layers[-1].output_shape == 3:
-                model.add(Flatten())
+            # flatten for good luck
+            model.add(Flatten())
 
             # classifier layer
             if self.dropout > 0:
