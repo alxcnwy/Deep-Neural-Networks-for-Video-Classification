@@ -439,7 +439,8 @@ class Architecture(object):
             # layer 1 (sequence layer)
             if sequence_model == "LSTM":
                 model.add(LSTM(self.layer_1_size, return_sequences=return_sequences_1, dropout=self.dropout, 
-                               input_shape=(self.sequence_length, self.num_features)))
+                     
+                               archinput_shape=(self.sequence_length, self.num_features)))
             elif sequence_model == "SimpleRNN":
                 model.add(SimpleRNN(self.layer_1_size, return_sequences=return_sequences_1, dropout=self.dropout, 
                                input_shape=(self.sequence_length, self.num_features)))
@@ -496,6 +497,10 @@ class Architecture(object):
             else:
                 if return_sequences_2 == True: 
                     model.add(Flatten())
+
+            # final flatten if needed
+            if model.layers[-1].output_shape != (None, self.data.num_classes):
+                model.add(Flatten())
 
             # classifier layer
             if self.dropout > 0:
