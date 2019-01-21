@@ -8,6 +8,7 @@ results/*
 cache/*
 *.log
 *.out
+*.pyc
 nohup.out
 notebooks/.ipynb_checkpoints/
 .ipynb_checkpoints/
