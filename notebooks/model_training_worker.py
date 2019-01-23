@@ -63,7 +63,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s, [%(levelname)-8s] [%(filename)s:%(lineno)d] %(message)s',
     handlers=[
-        logging.FileHandler("{0}/{1}.log".format(pwd, "logs_" + str(WORKER_ID))),
+        logging.FileHandler("{0}/{1}.log".format(pwd, "logs")),
         logging.StreamHandler()
     ])
 # init logger - will pass this to our architecture
