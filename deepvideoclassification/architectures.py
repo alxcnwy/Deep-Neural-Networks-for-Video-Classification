@@ -881,7 +881,7 @@ class Architecture(object):
                 epochs=epochs,
                 callbacks=callbacks,
                 shuffle=True,
-                verbose=self.verbose)
+                verbose=False)
         else:
             # train using full dataset
             history = self.model.fit(self.data.x_train, self.data.y_train, 
@@ -890,7 +890,7 @@ class Architecture(object):
                 epochs=epochs,
                 callbacks=callbacks,
                 shuffle=True,
-                verbose=self.verbose)
+                verbose=False)
 
         # get number of epochs actually trained (might have early stopped)
         epochs_trained = callback_stopper.stopped_epoch
@@ -1150,11 +1150,21 @@ class Architecture(object):
         ##################
         self.results = results
         with open(self.path_model + 'results.json', 'w') as fp:
+            print(results)
             json.dump(results, fp, indent=4, sort_keys=True)
             
-        # sync model outputs to s3
-        response = os.system("aws s3 sync " + self.path_model + " s3://thesisvids/penguins/models/" + str(self.model_id) + "/")
-        if response != 0:
-            logging.error("ERROR syncing model_id = {}".format(self.model_id))
+        # sync model outputs to AWS s3
+#         response = os.system("aws s3 sync " + self.path_model + " s3://thesisvids/penguins/models/" + str(self.model_id) + "/")
+#         if response != 0:
+#             logging.error("ERROR syncing model_id = {}".format(self.model_id))
+            
+        # sync model outputs to Google Storage
+        print("gsutil -m rsync -r " + self.path_model + " gs://thesis-penguins/models/" + str(self.model_id) + "/")
+        response = os.system("gsutil -m rsync -r " + self.path_model + " gs://thesis-penguins/models/" + str(self.model_id) + "/")
+        print("XX")
+        if response == 0:
+            print("upload success")
+        else:
+            print("upload error")
 
         
