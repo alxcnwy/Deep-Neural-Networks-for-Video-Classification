@@ -23,6 +23,6 @@ penguin_label_timestamps.csv
 checksums.csv
 .DS_Store
 notebooks/.DS_Store
-notebooks/start_workers.sh
-notebooks/start_workers_c.sh
-notebooks/start_workers_b.sh
+#notebooks/start_workers.sh
+#notebooks/start_workers_c.sh
+#notebooks/start_workers_b.sh
