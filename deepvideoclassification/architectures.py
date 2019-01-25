@@ -221,7 +221,7 @@ class Architecture(object):
         ### Build model architecture and init appropriate data object
         #############################################################
         
-        if architecture == "image_MLP_frozen":
+        if architecture == "image_mlp_frozen":
             
             ####################
             ### image_MLP_frozen
@@ -268,7 +268,7 @@ class Architecture(object):
             model.add(Dense(self.data.num_classes, activation='softmax'))
             
 
-        elif architecture == "image_MLP_trainable":
+        elif architecture == "image_mlp_trainable":
             
             #######################
             ### image_MLP_trainable
@@ -335,7 +335,7 @@ class Architecture(object):
             # combine base and top models into single model object
             model = Model(inputs=model_base.input, outputs=model_predictions)
                 
-        elif architecture == "video_MLP_concat":
+        elif architecture == "video_mlp_concat":
 
             ####################
             ### video_MLP_concat
@@ -381,7 +381,7 @@ class Architecture(object):
             # classifier layer
             model.add(Dense(self.data.num_classes, activation='softmax'))
             
-        elif architecture == "video_LRCNN_frozen":
+        elif architecture == "video_lrcnn_frozen":
 
             ######################
             ### video_LRCNN_frozen
@@ -508,7 +508,7 @@ class Architecture(object):
                 model.add(Dropout(self.dropout))
             model.add(Dense(self.data.num_classes, activation='softmax'))
 
-        elif architecture == "video_LRCNN_trainable":
+        elif architecture == "video_lrcnn_trainable":
             
             #########################
             ### video_LRCNN_trainable
@@ -646,7 +646,7 @@ class Architecture(object):
             # join cnn frame model and LSTM top
             model = Model(inputs=frames, outputs=out)
          
-        elif architecture == "C3D":
+        elif architecture == "c3d":
             
             #########
             ### C3D
@@ -710,7 +710,7 @@ class Architecture(object):
             model.add(Dropout(.5))
             model.add(Dense(self.data.num_classes, activation='softmax', name='fc8'))
             
-        elif architecture == "C3Dsmall":
+        elif architecture == "c3dsmall":
             
             #########################
             ### C3D - small variation
