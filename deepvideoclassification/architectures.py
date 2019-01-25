@@ -221,7 +221,7 @@ class Architecture(object):
         ### Build model architecture and init appropriate data object
         #############################################################
         
-        if architecture == "image_mlp_frozen":
+        if self.architecture == "image_mlp_frozen":
             
             ####################
             ### image_MLP_frozen
@@ -268,7 +268,7 @@ class Architecture(object):
             model.add(Dense(self.data.num_classes, activation='softmax'))
             
 
-        elif architecture == "image_mlp_trainable":
+        elif self.architecture == "image_mlp_trainable":
             
             #######################
             ### image_MLP_trainable
@@ -335,7 +335,7 @@ class Architecture(object):
             # combine base and top models into single model object
             model = Model(inputs=model_base.input, outputs=model_predictions)
                 
-        elif architecture == "video_mlp_concat":
+        elif self.architecture == "video_mlp_concat":
 
             ####################
             ### video_MLP_concat
@@ -381,7 +381,7 @@ class Architecture(object):
             # classifier layer
             model.add(Dense(self.data.num_classes, activation='softmax'))
             
-        elif architecture == "video_lrcnn_frozen":
+        elif self.architecture == "video_lrcnn_frozen":
 
             ######################
             ### video_LRCNN_frozen
@@ -508,7 +508,7 @@ class Architecture(object):
                 model.add(Dropout(self.dropout))
             model.add(Dense(self.data.num_classes, activation='softmax'))
 
-        elif architecture == "video_lrcnn_trainable":
+        elif self.architecture == "video_lrcnn_trainable":
             
             #########################
             ### video_LRCNN_trainable
@@ -646,7 +646,7 @@ class Architecture(object):
             # join cnn frame model and LSTM top
             model = Model(inputs=frames, outputs=out)
          
-        elif architecture == "c3d":
+        elif self.architecture == "c3d":
             
             #########
             ### C3D
@@ -710,7 +710,7 @@ class Architecture(object):
             model.add(Dropout(.5))
             model.add(Dense(self.data.num_classes, activation='softmax', name='fc8'))
             
-        elif architecture == "c3dsmall":
+        elif self.architecture == "c3dsmall":
             
             #########################
             ### C3D - small variation
@@ -770,7 +770,7 @@ class Architecture(object):
             model.add(Dense(self.data.num_classes, activation='softmax'))
             
         else:
-            raise NameError('Invalid architecture - must be one of [image_MLP_frozen, image_MLP_trainable, video_MLP_concat, video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Dsmall]')    
+            raise NameError('Invalid architecture [' + self.architecture + '] ... must be one of [image_MLP_frozen, image_MLP_trainable, video_MLP_concat, video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Dsmall]')    
         
         
         
