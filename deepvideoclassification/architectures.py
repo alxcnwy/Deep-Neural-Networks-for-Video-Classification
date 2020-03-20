@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+CPU_COUNT = 4
 
 import os
 import sys
@@ -152,6 +152,8 @@ class Architecture(object):
         
         # model architecture params
         self.frame_size = frame_size
+        if type(self.frame_size) == str:
+            self.frame_size = eval(self.frame_size) # parse to tuple
         self.pretrained_model_name = pretrained_model_name
         self.pooling = pooling
         self.sequence_model = sequence_model
@@ -180,7 +182,7 @@ class Architecture(object):
             self.pooling = self.pooling.lower()
         
         # read num features from pretrained model
-        if pretrained_model_name is not None:
+        if pretrained_model_name is not None and type(pretrained_model_name) == str:
             self.num_features = pretrained_model_len_features[pretrained_model_name]
             self.frame_size = pretrained_model_sizes[pretrained_model_name]
         
@@ -659,17 +661,9 @@ class Architecture(object):
             #
             # Implementation inspired by https://gist.github.com/albertomontesg/d8b21a179c1e6cca0480ebdf292c34d2
             
-            assert self.sequence_length == 16, "C3D requires sequence length 16"
-            assert self.frame_size == (112,112), "C3D requires frame size 112x112"
-            assert self.layer_1_size == 0, "C3D does not accept layer size inputs since it's a predefined architecture"
-            assert self.layer_2_size == 0, "C3D does not accept layer size inputs since it's a predefined architecture"
-            assert self.layer_3_size == 0, "C3D does not accept layer size inputs since it's a predefined architecture"
-            assert self.dropout == 0, "C3D does not accept layer size inputs since it's a predefined architecture"
-            assert self.sequence_model == None, "C3D does not accept a sequence_model parameter"
-            assert self.sequence_model_layers == None, "C3D does not accept a sequence_model_layers parameter"
-            assert self.pretrained_model_name == None, "C3D does not accept a pretrained_model_name parameter"            
-            assert self.pooling == None, "C3D does not accept a pooling parameter"                            
-            
+#             assert self.sequence_length == 16, "C3D requires sequence length 16"
+#             assert self.frame_size == (112,112), "C3D requires frame size 112x112"            
+            self.frame_size == (112,112)
             
             ### create data object for this architecture
             if self.verbose:
@@ -684,7 +678,7 @@ class Architecture(object):
             # C3D
             model = Sequential()
             # 1st layer group
-            model.add(Conv3D(64, (3, 3, 3), activation='relu', padding='same', name='conv1', input_shape=(16, 112, 112, 3)))
+            model.add(Conv3D(64, (3, 3, 3), activation='relu', padding='same', name='conv1', input_shape=(self.sequence_length, 112, 112, 3)))
             model.add(MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2), padding='valid', name='pool1'))
             # 2nd layer group
             model.add(Conv3D(128, (3, 3, 3), activation='relu',padding='same', name='conv2'))
@@ -723,21 +717,13 @@ class Architecture(object):
             #
             # Implementation inspired by https://gist.github.com/albertomontesg/d8b21a179c1e6cca0480ebdf292c34d2
             
-            assert self.sequence_length == 16, "C3Dsmall requires sequence length 16"
-            assert self.frame_size == (112,112), "C3Dsmall requires frame size 112x112"
-            assert self.layer_1_size == 0, "C3Dsmall does not accept layer size inputs since it's a predefined architecture"
-            assert self.layer_2_size == 0, "C3Dsmall does not accept layer size inputs since it's a predefined architecture"
-            assert self.layer_3_size == 0, "C3Dsmall does not accept layer size inputs since it's a predefined architecture"
-            assert self.dropout == 0, "C3Dsmall does not accept layer size inputs since it's a predefined architecture"
-            assert self.sequence_model == None, "C3Dsmall does not accept a sequence_model parameter"
-            assert self.sequence_model_layers == None, "C3Dsmall does not accept a sequence_model_layers parameter"
-            assert self.pretrained_model_name == None, "C3Dsmall does not accept a pretrained_model_name parameter"            
-            assert self.pooling == None, "C3Dsmall does not accept a pooling parameter"      
-            
+#             assert self.sequence_length == 16, "C3Dsmall requires sequence length 16"
+#             assert self.frame_size == (112,112), "C3Dsmall requires frame size 112x112"   
+            self.frame_size == (112,112)
             
             ### create data object for this architecture
             if self.verbose:
-                self.loggerinfo("Loading data")
+                self.logger.info("Loading data")
             self.data = Data(sequence_length = 16, 
                                 return_CNN_features = False, 
                                 return_generator = True,
@@ -748,7 +734,7 @@ class Architecture(object):
             # C3Dsmall
             model = Sequential()
             # 1st layer group
-            model.add(Conv3D(32, (3,3,3), activation='relu', input_shape=(data.sequence_length, 112, 112, 3)))
+            model.add(Conv3D(32, (3,3,3), activation='relu', input_shape=(self.sequence_length, 112, 112, 3)))
             model.add(MaxPooling3D(pool_size=(1, 2, 2), strides=(1, 2, 2)))
             # 2nd layer group
             model.add(Conv3D(64, (3,3,3), activation='relu'))
@@ -785,7 +771,7 @@ class Architecture(object):
         # load weights of model if they exist
         if os.path.exists(self.path_model + 'model.h5'):
             if self.verbose:
-                self.loggerinfo("Loading saved model weights")
+                self.logger.info("Loading saved model weights")
             # model.load_weights(self.path_model + 'model.h5')            
             model = load_model(self.path_model + 'model.h5')
         
@@ -828,7 +814,7 @@ class Architecture(object):
             self.model.layers[i].trainable = True
         
         if self.verbose:
-            self.loggerinfo("last {} layers of CNN set to trainable".format(num_layers))
+            self.logger.info("last {} layers of CNN set to trainable".format(num_layers))
             
 
     def fit(self, fit_round, learning_rate, epochs, patience):
@@ -881,7 +867,7 @@ class Architecture(object):
                 epochs=epochs,
                 callbacks=callbacks,
                 shuffle=True,
-                verbose=False)
+                verbose=True)
         else:
             # train using full dataset
             history = self.model.fit(self.data.x_train, self.data.y_train, 
