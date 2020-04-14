@@ -660,9 +660,7 @@ class Architecture(object):
             # https://arxiv.org/abs/1412.0767
             #
             # Implementation inspired by https://gist.github.com/albertomontesg/d8b21a179c1e6cca0480ebdf292c34d2
-            
-#             assert self.sequence_length == 16, "C3D requires sequence length 16"
-#             assert self.frame_size == (112,112), "C3D requires frame size 112x112"            
+                  
             self.frame_size == (112,112)
             
             ### create data object for this architecture
@@ -716,9 +714,7 @@ class Architecture(object):
             # https://arxiv.org/abs/1412.0767
             #
             # Implementation inspired by https://gist.github.com/albertomontesg/d8b21a179c1e6cca0480ebdf292c34d2
-            
-#             assert self.sequence_length == 16, "C3Dsmall requires sequence length 16"
-#             assert self.frame_size == (112,112), "C3Dsmall requires frame size 112x112"   
+              
             self.frame_size == (112,112)
             
             ### create data object for this architecture
@@ -1138,19 +1134,5 @@ class Architecture(object):
         with open(self.path_model + 'results.json', 'w') as fp:
             print(results)
             json.dump(results, fp, indent=4, sort_keys=True)
-            
-        # sync model outputs to AWS s3
-#         response = os.system("aws s3 sync " + self.path_model + " s3://thesisvids/penguins/models/" + str(self.model_id) + "/")
-#         if response != 0:
-#             logging.error("ERROR syncing model_id = {}".format(self.model_id))
-            
-        # sync model outputs to Google Storage
-        print("gsutil -m rsync -r " + self.path_model + " gs://thesis-penguins/models/" + str(self.model_id) + "/")
-        response = os.system("gsutil -m rsync -r " + self.path_model + " gs://thesis-penguins/models/" + str(self.model_id) + "/")
-        print("XX")
-        if response == 0:
-            print("upload success")
-        else:
-            print("upload error")
 
         
