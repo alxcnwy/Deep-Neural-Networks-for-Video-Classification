@@ -1,7 +1,9 @@
+.ipynb_checkpoints/*
 *.csv
 cache/*
 data/*
 models/*
+data_seals/*
 data_penguins/*
 *.out
 *.log
