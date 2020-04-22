@@ -10,14 +10,13 @@ This code is intended to be run on a machine with a GPU. It could be run locally
 ## Training a Model
 A single model can be trained using the `train_single_model.ipynb` notebook. 
 
-## Loading a Trained Model & Predicting Frames
-The 
 
-## Analyzing a trained model
+## Analyzing a Trained Model
+After a model is trained, XXX.
 
-![Loss curve](link-to-image)
+The notebook `model_analysis.ipynb` can be used to load metrics about model training including loss curve statistics and other metadata produced during model training. 
 
-
+The `results.json` file located in the trained model directory contains 
 
 ```
 {
@@ -64,6 +63,29 @@ The
     "verbose": true
 }
 ```
+
+![Loss curve](https://raw.githubusercontent.com/alxcnwy/Deep-Neural-Networks-for-Video-Classification/master/readme/accuracy_example.png)
+
+![Confusion Matrix](https://raw.githubusercontent.com/alxcnwy/Deep-Neural-Networks-for-Video-Classification/master/readme/confusion_example.png)
+
+## Loading a Trained Model & Predicting Frames
+The `load_model_and_predict_frames.ipynb` notebook can be used to load a trained model and use it to output predictions for each frame in the dataset. 
+
+It produces a file in the model directory called `frame_predictions.csv` with the following columns:
+
+* `class 1` - predicted probability for class 1
+* `class 2` - predicted probability for class 2
+*  `...`
+*  `class n` - predicted probability for class n
+*  `prediction` - class with max probability
+*  `video` - video name
+*  `frame` - frame filename
+*  `label` - label for given frame
+*  `split` - train/valid/test split
+*  `error` - whether an error was made
+
+If labels are unknown, a dummy label equal to one of the labels used by the model should be given in `labels.csv`.
+
 
 ## Helper Notebooks
 There are several helper notebooks included in the `/notebooks/` directory.
