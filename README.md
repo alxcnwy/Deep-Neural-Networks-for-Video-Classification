@@ -5,7 +5,9 @@
 This repository can be used to train deep neural networks for video classification. It also contains several Jupyter notebooks to transform data into the format required and to analyze model outputs.
 
 ## Setup
-This code is intended to be run on a machine with a GPU. It could be run locally or using a cloud provider such as Amazon Web Services or Google Cloud. 
+This code is intended to be run on a machine with a GPU. It could be run locally or using a cloud provider such as Amazon Web Services or Google Cloud Platform.
+
+The easiest way to get started is to create a virtual machine with a GPU on one of the cloud provider platforms using their deep learning image which will install and configure TensorFlow to be used with the GPU. 
 
 ## Training a Model
 A single model can be trained using the `train_single_model.ipynb` notebook. 
