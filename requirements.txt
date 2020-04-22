@@ -105,7 +105,7 @@ mpmath==1.0.0
 nbconvert==5.4.0
 nbformat==4.4.0
 networkx==2.2
-nltk==3.3
+nltk==3.4.5
 notebook==5.7.0
 numpy==1.15.1
 oauth2client==4.1.3
