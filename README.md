@@ -4,18 +4,47 @@
 
 This repository can be used to train deep neural networks for video classification. It also contains several Jupyter notebooks to transform data into the format required and to analyze model outputs.
 
+These models were implemented for use in Ecology but can be used in any application. They were developed with the following applications in mind:
+
+1. Detect animals in camera trap videos.
+2. Classify animal actions in video captured "first-person" animal-mounted cameras.
+
+The following models are implemented (more information is given in the `Training Models` section): 
+
+* Image-only Convolutional Neural Network (CNN) - input is a single frame. Baseline that ignores temporal information in the video. Best practice (implemented here) is to use "transfer learning" and fine-tune a CNN architecture that has already been trained on ImageNet. 
+* Concatenated frames CNN - input is a concatenated clip of frames (`sequence length`) 
+
 ## Setup
 This code is intended to be run on a machine with a GPU. It could be run locally or using a cloud provider such as Amazon Web Services or Google Cloud Platform.
 
 The easiest way to get started is to create a virtual machine with a GPU on one of the cloud provider platforms using their deep learning image which will install and configure TensorFlow to be used with the GPU. 
 
-## Training a Model
-A single model can be trained using the `train_single_model.ipynb` notebook. 
+You may need to `pip install` some packages listed in `requirements.txt`. Check your package versions or submit an issue if you run into any errors.
+
+## Training Models
+A single model can be trained using the `train_single_model.ipynb` notebook. Parameters are set in the experiment dictionary at the top of the notebook. 
+
+Here is an explanation of the parameters that can be used for an experiment:
+
+* model_id: integer identifier for this model e.g. 1234 - model will be saved in `/models/model_id`    
+* architecture: architecture of model in [image_MLP_frozen, image_MLP_trainable, video_MLP_co video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Ds
+* sequence_length: number of frames in sequence to be returned by Data object
+* frame_size: size that frames are resized to (different models / architectures accept different input si will be inferred if pretrained_model_name is given since they have fixed sizes)
+* pretrained_model_name: name of pretrained model (or None if not using pretrained model e.g. for 3D-CNN)
+* pooling: name of pooling variant (or None if not using pretrained model e.g. for 3D-CNN or if fitting mor-dense layers on top of pretrained model 
+* sequence_model: sequence model in [LSTM, SimpleRNN, GRU, Convolution1D]
+:sequence_model_layers: default to 1, can be stacked 2 or 3 (but less than 4) layer sequence model (always stacking the same sequence model, not mixing LSTM and GRU, for example)
+* layer_1_size: number of neurons in layer 1
+* layer_2_size: number of neurons in layer 2
+* layer_3_size: number of neurons in layer 3
+* dropout: amount of dropout to add (same applied throughout model - good default is 0.20)
+* convolution_kernel_size: size of 1-D convolutional kernel for 1-d conv sequence models (good default is 3)
+* model_weights_path: path to .h5 weights file to be loaded for pretrained CNN in LRCNN-train        
+* batch_size: batch size used to fit model (default to 32)
+* verbose: whether to log progress updates
 
 
 ## Analyzing a Trained Model
-After a model is trained, XXX.
-
 The notebook `model_analysis.ipynb` can be used to load metrics about model training including loss curve statistics and other metadata produced during model training. 
 
 The `results.json` file located in the trained model directory contains 
