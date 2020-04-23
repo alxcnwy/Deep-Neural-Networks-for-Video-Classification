@@ -26,22 +26,22 @@ A single model can be trained using the `train_single_model.ipynb` notebook. Par
 
 Here is an explanation of the parameters that can be used for an experiment:
 
-* model_id: integer identifier for this model e.g. 1234 - model will be saved in `/models/model_id`    
-* architecture: architecture of model in [image_MLP_frozen, image_MLP_trainable, video_MLP_co video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Ds
-* sequence_length: number of frames in sequence to be returned by Data object
-* frame_size: size that frames are resized to (different models / architectures accept different input si will be inferred if pretrained_model_name is given since they have fixed sizes)
-* pretrained_model_name: name of pretrained model (or None if not using pretrained model e.g. for 3D-CNN)
-* pooling: name of pooling variant (or None if not using pretrained model e.g. for 3D-CNN or if fitting mor-dense layers on top of pretrained model 
-* sequence_model: sequence model in [LSTM, SimpleRNN, GRU, Convolution1D]
-:sequence_model_layers: default to 1, can be stacked 2 or 3 (but less than 4) layer sequence model (always stacking the same sequence model, not mixing LSTM and GRU, for example)
-* layer_1_size: number of neurons in layer 1
-* layer_2_size: number of neurons in layer 2
-* layer_3_size: number of neurons in layer 3
-* dropout: amount of dropout to add (same applied throughout model - good default is 0.20)
-* convolution_kernel_size: size of 1-D convolutional kernel for 1-d conv sequence models (good default is 3)
-* model_weights_path: path to .h5 weights file to be loaded for pretrained CNN in LRCNN-train        
-* batch_size: batch size used to fit model (default to 32)
-* verbose: whether to log progress updates
+* `model_id` integer identifier for this model e.g. 1234 - model will be saved in `/models/model_id`    
+* `architecture` architecture of model in [image_MLP_frozen, image_MLP_trainable, video_MLP_co video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Ds
+* `sequence_length` number of frames in sequence to be returned by Data object
+* `frame_size` size that frames are resized to (different models / architectures accept different input si will be inferred if pretrained_model_name is given since they have fixed sizes)
+* `pretrained_model_name` name of pretrained model (or None if not using pretrained model e.g. for 3D-CNN)
+* `pooling` name of pooling variant (or None if not using pretrained model e.g. for 3D-CNN or if fitting mor-dense layers on top of pretrained model 
+* `sequence_model` sequence model in [LSTM, SimpleRNN, GRU, Convolution1D]
+:sequence_model_layers` default to 1, can be stacked 2 or 3 (but less than 4) layer sequence model (always stacking the same sequence model, not mixing LSTM and GRU, for example)
+* `layer_1_size` number of neurons in layer 1
+* `layer_2_size` number of neurons in layer 2
+* `layer_3_size` number of neurons in layer 3
+* `dropout` amount of dropout to add (same applied throughout model - good default is 0.20)
+* `convolution_kernel_size` size of 1-D convolutional kernel for 1-d conv sequence models (good default is 3)
+* `model_weights_path` path to .h5 weights file to be loaded for pretrained CNN in LRCNN-train        
+* `batch_size` batch size used to fit model (default to 32)
+* `verbose` whether to log progress updates
 
 
 ## Analyzing a Trained Model
