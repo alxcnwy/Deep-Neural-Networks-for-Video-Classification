@@ -1,5 +1,3 @@
-> WORK IN PROGRESS
-
 # Deep Neural Networks for Video Classification
 
 This repository can be used to train deep neural networks for video classification. It also contains several Jupyter notebooks to transform data into the format required and to analyze model outputs.
@@ -9,10 +7,18 @@ These models were implemented for use in Ecology but can be used in any applicat
 1. Detect animals in camera trap videos.
 2. Classify animal actions in video captured "first-person" animal-mounted cameras.
 
+![Seals](https://github.com/alxcnwy/Deep-Neural-Networks-for-Video-Classification/raw/master/readme/seals.gif)
+
+![Penguins](https://github.com/alxcnwy/Deep-Neural-Networks-for-Video-Classification/raw/master/readme/penguins.gif)
+
 The following models are implemented (more information is given in the `Training Models` section): 
 
-* Image-only Convolutional Neural Network (CNN) - input is a single frame. Baseline that ignores temporal information in the video. Best practice (implemented here) is to use "transfer learning" and fine-tune a CNN architecture that has already been trained on ImageNet. 
-* Concatenated frames CNN - input is a concatenated clip of frames (`sequence length`) 
+* `Image-only Convolutional Neural Network (CNN)` - input is a single frame. Baseline that ignores temporal information in the video. Best practice (implemented here) is to use "transfer learning" and fine-tune a CNN architecture that has already been trained on ImageNet. 
+* `Concatenated Frames CNN` - input is a concatenated clip of frames (`sequence length` number of frames) with a fully connected neural network mapping to output layers
+* `Long-term Recurrent Neural Network` - input is a clip of frames which are first run through an ImageNet pre-trained CNN followed by a stacked RNN. Spatial-then-temporal model. 
+* `3D-Convolutional Neural Network` - input is clip of frames which are run through a spatio-temporal CNN.
+
+![LRCN](https://github.com/alxcnwy/Deep-Neural-Networks-for-Video-Classification/raw/master/readme/seq5layers2.jpg)
 
 ## Setup
 This code is intended to be run on a machine with a GPU. It could be run locally or using a cloud provider such as Amazon Web Services or Google Cloud Platform.
@@ -20,6 +26,11 @@ This code is intended to be run on a machine with a GPU. It could be run locally
 The easiest way to get started is to create a virtual machine with a GPU on one of the cloud provider platforms using their deep learning image which will install and configure TensorFlow to be used with the GPU. 
 
 You may need to `pip install` some packages listed in `requirements.txt`. Check your package versions or submit an issue if you run into any errors.
+
+Your dataset needs to be in the following format:
+
+* A `data` folder containing one folder for each video with frame images named sequentially e.g.  `data/video_1/video_1_00001.jpg`. Video frames can be extracted using FFMPEG or the `helper_extract_frames.ipynb` helper notebook.
+* A `labels.csv` file stored in `data` containing one row for each video frame with the following columns: `video,frame,label,split` where video is the video folder name, frame is the frame filename, label is the ground-truth label for the frame and split is one of train/valid/test. There are helper notebooks for converting timestamp labels to frame-level labels and also to add train/valid/test splits to a labels file.
 
 ## Training Models
 A single model can be trained using the `train_single_model.ipynb` notebook. Parameters are set in the experiment dictionary at the top of the notebook. 
@@ -43,11 +54,12 @@ Here is an explanation of the parameters that can be used for an experiment:
 * `batch_size` batch size used to fit model (default to 32)
 * `verbose` whether to log progress updates
 
+A grid-search of models can be run using the `train_grid_search.ipynb` notebook which lets you specify experiment parameter ranges for the grid search. 
 
 ## Analyzing a Trained Model
 The notebook `model_analysis.ipynb` can be used to load metrics about model training including loss curve statistics and other metadata produced during model training. 
 
-The `results.json` file located in the trained model directory contains 
+The `results.json` file located in the trained model directory contains data about the trained model. Other outputs including training loss curve data and a confusion matrix are stored in the model folder `/models/*model_id*/`.
 
 ```
 {
@@ -122,19 +134,19 @@ If labels are unknown, a dummy label equal to one of the labels used by the mode
 There are several helper notebooks included in the `/notebooks/` directory.
 
 ### > `helper_extract_frames.ipynb`
-This notebook can be used to 
+This notebook can be used to extract video frame images from a given video. 
 
 ### > `helper_convert_timestamps_file_to_labels.ipynb`
-This notebook can be used to 
+This notebook can be used to convert labels in timestamp format e.g. 01:20:05 - 01:20:34 into the required frame-level format.
 
 ### > `helper_check_frames_against_labels.ipynb`
-This notebook can be used to 
+This notebook can be used to check that there is a label corresponding to each video frame as is required.
 
 ### > `helper_add_train_valid_test_splits_to_labels.ipynb`
-This notebook can be used to 
+This notebook can be used to add train/valid/test splits to your labels file once it is in the right format.
 
 ### > `helper_explore_dataset.ipynb`
-This notebook can be used to 
+This notebook can be used to visualize some frames from each video.
 
 
 ## Researchers
