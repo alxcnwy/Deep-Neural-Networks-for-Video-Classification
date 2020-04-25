@@ -38,7 +38,7 @@ A single model can be trained using the `train_single_model.ipynb` notebook. Par
 Here is an explanation of the parameters that can be used for an experiment:
 
 * `model_id` integer identifier for this model e.g. 1234 - model will be saved in `/models/model_id`    
-* `architecture` architecture of model in [image_MLP_frozen, image_MLP_trainable, video_MLP_co video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Ds
+* `architecture` architecture of model in [image_MLP_frozen, image_MLP_trainable, video_MLP_co video_LRCNN_frozen, video_LRCNN_trainable, C3D, C3Dsmall]
 * `sequence_length` number of frames in sequence to be returned by Data object
 * `frame_size` size that frames are resized to (different models / architectures accept different input si will be inferred if pretrained_model_name is given since they have fixed sizes)
 * `pretrained_model_name` name of pretrained model (or None if not using pretrained model e.g. for 3D-CNN)
