@@ -5,7 +5,7 @@ This repository can be used to train deep neural networks for video classificati
 These models were implemented for use in Ecology but can be used in any application. They were developed with the following applications in mind:
 
 1. Detect animals in camera trap videos.
-2. Classify animal actions in video captured "first-person" animal-mounted cameras.
+2. Classify animal actions in video captured using "first-person" animal-mounted cameras.
 
 ![Seals](https://github.com/alxcnwy/Deep-Neural-Networks-for-Video-Classification/raw/master/readme/seals.gif)
 
