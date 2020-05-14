@@ -1,0 +1,24 @@
+{
+    "architecture": "video_lrcnn_frozen",
+    "batch_size": 32,
+    "convolution_kernel_size": 3,
+    "data_shape": "#rows: train=262, valid=170, test=262 ",
+    "dropout": 0.2,
+    "frame_size": [
+        224,
+        224
+    ],
+    "layer_1_size": 256,
+    "layer_2_size": 128,
+    "layer_3_size": 0,
+    "model_id": 5,
+    "model_weights_path": null,
+    "num_features": 2048,
+    "path_model": "/Users/alex/Documents/Work/thesis/_code/Deep-Neural-Networks-for-Video-Classification/models/5/",
+    "pooling": "max",
+    "pretrained_model_name": "resnet50",
+    "sequence_length": 5,
+    "sequence_model": "LSTM",
+    "sequence_model_layers": 2,
+    "verbose": true
+}
