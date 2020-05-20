@@ -1,6 +1,5 @@
 .DS_Store
 .ipynb_checkpoints/*
-*.csv
 cache/*
 data_seals/*
 data_penguins/*
